@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的旅遊雲端手帳</title>
+    <title>我的旅遊雲端手帳 v1.1.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -13,25 +13,49 @@
             --primary-color: #2a9d8f; --danger-color: #e63946; --star-color: #ffbe0b;
             --bg-color: #f4f7f6; --white: #ffffff; --shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        body { font-family: "PingFang TC", sans-serif; background-color: var(--bg-color); margin: 0; padding-bottom: 50px; }
-        .top-banner { width: 100%; height: 320px; background-color: #222; background-size: cover; background-position: center; display: flex; justify-content: center; align-items: center; color: white; position: relative; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); margin: 0; padding-bottom: 50px; }
+        
+        .top-banner { 
+            width: 100%; height: 320px; background-color: #222; background-size: cover; background-position: center; 
+            display: flex; justify-content: center; align-items: center; color: white; position: relative; 
+        }
         .top-banner h1 { font-family: 'Caveat', cursive; font-size: 6rem; margin: 0; transform: rotate(-4deg); text-shadow: 3px 6px 15px rgba(0,0,0,0.4); }
+
         .main-content { max-width: 1100px; margin: 30px auto 0; padding: 0 15px; }
         .header-actions { background: var(--white); padding: 15px 20px; border-radius: 12px; box-shadow: var(--shadow); display: flex; justify-content: flex-end; margin-bottom: 25px; }
-        .grid-system { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
-        .trip-card { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 400px; position: relative; }
-        .img-container { position: relative; width: 100%; height: 160px; background: #ddd; }
+
+        .grid-system { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        
+        /* 🎨 修復卡片樣式 */
+        .trip-card { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 420px; position: relative; transition: transform 0.2s; }
+        .img-container { position: relative; width: 100%; height: 180px; background: #ddd; }
         .trip-img { width: 100%; height: 100%; object-fit: cover; }
-        .img-edit-gear { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; background: rgba(255,255,255,0.9); border: 2px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: pointer; }
-        .card-tools { padding: 12px; background: #fdfdfd; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
-        .btn-action { border: none; padding: 8px 0; width: 31%; border-radius: 6px; font-weight: bold; cursor: pointer; background: #f0f0f0; }
+        
+        /* ⚙️ 修復齒輪動畫 */
+        .img-edit-gear { 
+            position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; 
+            background: rgba(255,255,255,0.95); border: 2px solid #333; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; z-index: 100; 
+            cursor: pointer; font-size: 20px; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        .img-edit-gear:hover { transform: rotate(180deg); scale: 1.1; }
+
+        .card-tools { padding: 12px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; gap: 8px; }
+        .btn-action { flex: 1; border: none; padding: 10px 0; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; background: #eee; transition: 0.2s; }
         .btn-edit.active { background: #2ecc71; color: white; }
-        .trip-info { padding: 18px; flex-grow: 1; display: flex; flex-direction: column; gap: 6px; }
+
+        .trip-info { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
         .trip-title { font-size: 1.4rem; font-weight: 800; color: #1a1a1a; margin: 0; }
-        .editable { outline: none; border-radius: 4px; padding: 2px 4px; }
+        .trip-date { color: #666; font-size: 0.9rem; font-weight: bold; }
+        .trip-desc { color: #444; line-height: 1.5; font-size: 0.95rem; margin: 5px 0; }
+        
+        /* ✍️ 編輯模式樣式 */
+        .editable { outline: none; border-radius: 4px; padding: 2px 5px; min-height: 1.2em; }
         .editing-mode { background-color: #fffde7; border: 1px dashed #ffa000; }
-        .star-rating { color: #e0e0e0; font-size: 1.5rem; margin-top: auto; }
+        
+        .star-rating { color: #e0e0e0; font-size: 1.5rem; margin-top: auto; cursor: pointer; user-select: none; }
         .star-rating .filled { color: var(--star-color); }
+
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px); }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 85%; max-width: 400px; }
         .modal-btns { display: flex; gap: 15px; margin-top: 25px; }
@@ -46,15 +70,16 @@
 
     <main class="main-content">
         <div class="header-actions">
-            <button onclick="addNewTrip()" style="padding: 12px 30px; border-radius: 30px; background: var(--primary-color); color: white; border: none; font-weight: bold; cursor: pointer;">+ 新增雲端行程</button>
+            <button onclick="addNewTrip()" style="padding: 12px 30px; border-radius: 30px; background: var(--primary-color); color: white; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(42,157,143,0.3);">+ 新增雲端行程</button>
         </div>
+        <div id="loading" style="text-align:center; padding: 50px; font-size: 1.2rem; color: #666;">讀取雲端資料中...</div>
         <div class="grid-system" id="tripGrid"></div>
     </main>
 
-    <div class="modal-overlay" id="imgModal"><div class="modal-content"><h3>更換封面</h3><input type="text" id="imgUrlInput" placeholder="貼上圖片網址..." style="width:100%; padding:10px; margin-bottom:15px; box-sizing:border-box;"><div class="modal-btns"><button class="btn-modal" style="background:var(--primary-color); color:white;" onclick="applyImageChange()">確定</button><button class="btn-modal" onclick="closeModal('imgModal')">取消</button></div></div></div>
+    <div class="modal-overlay" id="imgModal"><div class="modal-content"><h3>更換封面照片</h3><input type="text" id="imgUrlInput" placeholder="請貼上圖片網址..." style="width:100%; padding:12px; margin-bottom:15px; border: 1px solid #ddd; border-radius: 8px; box-sizing:border-box;"><div class="modal-btns"><button class="btn-modal" style="background:var(--primary-color); color:white;" onclick="applyImageChange()">套用</button><button class="btn-modal" onclick="closeModal('imgModal')">取消</button></div></div></div>
 
     <script>
-        // --- 1. Firebase 初始化 ---
+        // --- 1. Firebase 初始化 (維持你的專屬金鑰) ---
         const firebaseConfig = {
             apiKey: "AIzaSyA4g7tQuKmPHRYZNdbxWbHFtvc5RnJQVzM",
             authDomain: "travelgame-91b3a.firebaseapp.com",
@@ -62,35 +87,31 @@
             projectId: "travelgame-91b3a",
             storageBucket: "travelgame-91b3a.firebasestorage.app",
             messagingSenderId: "498309085943",
-            appId: "1:498309085943:web:764dae004f4c9f96d7b1f2",
-            measurementId: "G-D7R587WCJE"
+            appId: "1:498309085943:web:764dae004f4c9f96d7b1f2"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // --- 2. 隨機圖庫 ID (避開黑圖與重複) ---
-        const secureIDs = ["1506744038136-46273834b3fb", "1476514525535-07fb3b4ae5f1", "1501785888041-af3ef285b470", "1533900298318-6b8da08a523e", "1510414842594-a61c69b5ae57", "1523712999610-f77fbcfc3843", "1507525428034-b723cf961d3e", "1501555084092-d427f900a297"];
+        // 穩定圖庫
+        const secureIDs = ["1506744038136-46273834b3fb", "1476514525535-07fb3b4ae5f1", "1501785888041-af3ef285b470", "1533900298318-6b8da08a523e", "1510414842594-a61c69b5ae57", "1507525428034-b723cf961d3e"];
         const bannerIDs = ["1527631746610-bca00a040d60", "1464817739974-03840f69473a", "1504280390367-361c6d9963b0", "1495985812444-236d2528571b"];
 
-        // --- 3. 核心功能 ---
-        
-        // 重新整理時換大圖
         window.onload = () => {
             const randomBanner = bannerIDs[Math.floor(Math.random() * bannerIDs.length)];
             document.getElementById('mainBanner').style.backgroundImage = `url('https://images.unsplash.com/photo-${randomBanner}?auto=format&fit=crop&w=1200&q=80')`;
             loadCloudData();
         };
 
-        // 從雲端抓資料並顯示
         function loadCloudData() {
             db.ref('trips').on('value', (snapshot) => {
+                document.getElementById('loading').style.display = 'none';
                 const grid = document.getElementById('tripGrid');
-                grid.innerHTML = ''; // 清空重新渲染
+                grid.innerHTML = '';
                 const data = snapshot.val();
                 if (data) {
-                    Object.keys(data).forEach(id => {
-                        renderCard(id, data[id]);
-                    });
+                    // 依時間排序
+                    const sortedKeys = Object.keys(data).sort((a,b) => data[b].order - data[a].order);
+                    sortedKeys.forEach(id => renderCard(id, data[id]));
                 }
             });
         }
@@ -105,7 +126,7 @@
                     <div class="card-tools">
                         <button class="btn-action">查看</button>
                         <button class="btn-action btn-edit" onclick="toggleEdit(this, '${id}')">編輯</button>
-                        <button class="btn-action" onclick="deleteTrip('${id}')">刪除</button>
+                        <button class="btn-action" style="color:var(--danger-color)" onclick="deleteTrip('${id}')">刪除</button>
                     </div>
                     <div class="trip-info">
                         <div class="trip-date editable" data-field="date">${item.date}</div>
@@ -127,19 +148,18 @@
 
         function addNewTrip() {
             const randomImg = secureIDs[Math.floor(Math.random() * secureIDs.length)];
-            const newTrip = {
+            db.ref('trips').push({
                 img: `https://images.unsplash.com/photo-${randomImg}?auto=format&fit=crop&w=600&q=80`,
                 title: "新目的地",
                 date: "2026.02.05",
                 desc: "點擊編輯來分享你的旅程...",
                 rating: 0,
                 order: Date.now()
-            };
-            db.ref('trips').push(newTrip); // 直接推送到雲端
+            });
         }
 
         function deleteTrip(id) {
-            if(confirm("確定刪除雲端行程？")) db.ref('trips/' + id).remove();
+            if(confirm("確定要刪除這段雲端紀錄嗎？")) db.ref('trips/' + id).remove();
         }
 
         function toggleEdit(btn, id) {
@@ -148,19 +168,20 @@
             const editables = card.querySelectorAll('.editable');
 
             if (!isEditing) {
-                editables.forEach(el => el.contentEditable = true);
-                btn.innerText = "儲存";
+                editables.forEach(el => { el.contentEditable = true; el.classList.add('editing-mode'); });
+                btn.innerText = "儲存中...";
                 btn.classList.add('active');
-                editables[0].focus();
             } else {
                 const updates = {};
                 editables.forEach(el => {
                     updates[el.dataset.field] = el.innerText;
                     el.contentEditable = false;
+                    el.classList.remove('editing-mode');
                 });
-                db.ref('trips/' + id).update(updates);
-                btn.innerText = "編輯";
-                btn.classList.remove('active');
+                db.ref('trips/' + id).update(updates).then(() => {
+                    btn.innerText = "編輯";
+                    btn.classList.remove('active');
+                });
             }
         }
 
@@ -183,13 +204,7 @@
             }
         }
 
-        // 拖曳排序也同步雲端
-        new Sortable(document.getElementById('tripGrid'), {
-            animation: 200,
-            onEnd: function() {
-                // 這裡可以進階實作排序權重，目前簡單重新整理即可
-            }
-        });
+        new Sortable(document.getElementById('tripGrid'), { animation: 200 });
     </script>
 </body>
 </html>
