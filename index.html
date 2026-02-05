@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的旅遊雲端手帳 v1.1.0</title>
+    <title>我的旅遊雲端手帳 v1.1.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -15,45 +15,51 @@
         }
         body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); margin: 0; padding-bottom: 50px; }
         
+        /* 1 & 2. 修復大圖與文字 */
         .top-banner { 
-            width: 100%; height: 320px; background-color: #222; background-size: cover; background-position: center; 
+            width: 100%; height: 320px; background-color: #333; background-size: cover; background-position: center; 
             display: flex; justify-content: center; align-items: center; color: white; position: relative; 
         }
-        .top-banner h1 { font-family: 'Caveat', cursive; font-size: 6rem; margin: 0; transform: rotate(-4deg); text-shadow: 3px 6px 15px rgba(0,0,0,0.4); }
+        .top-banner h1 { font-family: 'Caveat', cursive; font-size: 5rem; margin: 0; transform: rotate(-4deg); text-shadow: 3px 6px 15px rgba(0,0,0,0.4); }
 
         .main-content { max-width: 1100px; margin: 30px auto 0; padding: 0 15px; }
         .header-actions { background: var(--white); padding: 15px 20px; border-radius: 12px; box-shadow: var(--shadow); display: flex; justify-content: flex-end; margin-bottom: 25px; }
 
         .grid-system { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         
-        /* 🎨 修復卡片樣式 */
-        .trip-card { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 420px; position: relative; transition: transform 0.2s; }
+        .trip-card { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 420px; position: relative; }
         .img-container { position: relative; width: 100%; height: 180px; background: #ddd; }
         .trip-img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* ⚙️ 修復齒輪動畫 */
+        /* 7 & 8. 拖曳把手設計 (限左上角) */
+        .drag-handle {
+            position: absolute; top: 12px; left: 12px; width: 36px; height: 36px;
+            background: rgba(255,255,255,0.9); border: 2px solid #333; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; z-index: 100;
+            cursor: grab; font-size: 18px;
+        }
+        .drag-handle:active { cursor: grabbing; }
+
         .img-edit-gear { 
             position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; 
-            background: rgba(255,255,255,0.95); border: 2px solid #333; border-radius: 50%; 
+            background: rgba(255,255,255,0.9); border: 2px solid #333; border-radius: 50%; 
             display: flex; align-items: center; justify-content: center; z-index: 100; 
-            cursor: pointer; font-size: 20px; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            cursor: pointer; font-size: 20px; transition: 0.5s; 
         }
-        .img-edit-gear:hover { transform: rotate(180deg); scale: 1.1; }
+        .img-edit-gear:hover { transform: rotate(180deg); }
 
         .card-tools { padding: 12px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; gap: 8px; }
-        .btn-action { flex: 1; border: none; padding: 10px 0; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; background: #eee; transition: 0.2s; }
+        .btn-action { flex: 1; border: none; padding: 10px 0; border-radius: 6px; font-weight: bold; cursor: pointer; background: #eee; }
         .btn-edit.active { background: #2ecc71; color: white; }
 
         .trip-info { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
-        .trip-title { font-size: 1.4rem; font-weight: 800; color: #1a1a1a; margin: 0; }
+        .trip-title { font-size: 1.4rem; font-weight: 800; margin: 0; }
         .trip-date { color: #666; font-size: 0.9rem; font-weight: bold; }
-        .trip-desc { color: #444; line-height: 1.5; font-size: 0.95rem; margin: 5px 0; }
-        
-        /* ✍️ 編輯模式樣式 */
-        .editable { outline: none; border-radius: 4px; padding: 2px 5px; min-height: 1.2em; }
+        .editable { outline: none; border-radius: 4px; padding: 2px 5px; }
         .editing-mode { background-color: #fffde7; border: 1px dashed #ffa000; }
         
-        .star-rating { color: #e0e0e0; font-size: 1.5rem; margin-top: auto; cursor: pointer; user-select: none; }
+        .star-rating { color: #e0e0e0; font-size: 1.5rem; margin-top: auto; cursor: default; }
+        .star-rating.can-edit { cursor: pointer; }
         .star-rating .filled { color: var(--star-color); }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px); }
@@ -65,21 +71,21 @@
 <body>
 
     <header class="top-banner" id="mainBanner">
-        <h1>Explore</h1>
+        <h1>Explore your life</h1>
     </header>
 
     <main class="main-content">
         <div class="header-actions">
-            <button onclick="addNewTrip()" style="padding: 12px 30px; border-radius: 30px; background: var(--primary-color); color: white; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(42,157,143,0.3);">+ 新增雲端行程</button>
+            <button onclick="addNewTrip()" style="padding: 12px 30px; border-radius: 30px; background: var(--primary-color); color: white; border: none; font-weight: bold; cursor: pointer;">+ 新增旅遊行程</button>
         </div>
-        <div id="loading" style="text-align:center; padding: 50px; font-size: 1.2rem; color: #666;">讀取雲端資料中...</div>
         <div class="grid-system" id="tripGrid"></div>
     </main>
 
-    <div class="modal-overlay" id="imgModal"><div class="modal-content"><h3>更換封面照片</h3><input type="text" id="imgUrlInput" placeholder="請貼上圖片網址..." style="width:100%; padding:12px; margin-bottom:15px; border: 1px solid #ddd; border-radius: 8px; box-sizing:border-box;"><div class="modal-btns"><button class="btn-modal" style="background:var(--primary-color); color:white;" onclick="applyImageChange()">套用</button><button class="btn-modal" onclick="closeModal('imgModal')">取消</button></div></div></div>
+    <div class="modal-overlay" id="imgModal"><div class="modal-content"><h3>更換封面照片</h3><input type="text" id="imgUrlInput" placeholder="貼上圖片網址..." style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"><p style="text-align:center; margin:5px; font-size:0.8rem; color:#888;">或</p><input type="file" id="imgFileInput" accept="image/*" style="width:100%; margin-bottom:15px;"><div class="modal-btns"><button class="btn-modal" style="background:var(--primary-color); color:white;" onclick="applyImageChange()">確定修改</button><button class="btn-modal" onclick="closeModal('imgModal')">取消</button></div></div></div>
+
+    <div class="modal-overlay" id="deleteModal"><div class="modal-content" style="text-align:center;"><div style="font-size:3rem;">🎒</div><h3>確定要捨棄這段旅程？</h3><div class="modal-btns"><button class="btn-modal" style="background:var(--danger-color); color:white;" id="confirmDeleteBtn">確定刪除</button><button class="btn-modal" onclick="closeModal('deleteModal')">取消</button></div></div></div>
 
     <script>
-        // --- 1. Firebase 初始化 (維持你的專屬金鑰) ---
         const firebaseConfig = {
             apiKey: "AIzaSyA4g7tQuKmPHRYZNdbxWbHFtvc5RnJQVzM",
             authDomain: "travelgame-91b3a.firebaseapp.com",
@@ -92,26 +98,25 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 穩定圖庫
-        const secureIDs = ["1506744038136-46273834b3fb", "1476514525535-07fb3b4ae5f1", "1501785888041-af3ef285b470", "1533900298318-6b8da08a523e", "1510414842594-a61c69b5ae57", "1507525428034-b723cf961d3e"];
+        // 1. 修復大圖邏輯
         const bannerIDs = ["1527631746610-bca00a040d60", "1464817739974-03840f69473a", "1504280390367-361c6d9963b0", "1495985812444-236d2528571b"];
+        const secureIDs = ["1506744038136-46273834b3fb", "1476514525535-07fb3b4ae5f1", "1501785888041-af3ef285b470", "1533900298318-6b8da08a523e"];
 
         window.onload = () => {
             const randomBanner = bannerIDs[Math.floor(Math.random() * bannerIDs.length)];
-            document.getElementById('mainBanner').style.backgroundImage = `url('https://images.unsplash.com/photo-${randomBanner}?auto=format&fit=crop&w=1200&q=80')`;
+            document.getElementById('mainBanner').style.backgroundImage = `linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url('https://images.unsplash.com/photo-${randomBanner}?auto=format&fit=crop&w=1200&q=80')`;
             loadCloudData();
         };
 
         function loadCloudData() {
             db.ref('trips').on('value', (snapshot) => {
-                document.getElementById('loading').style.display = 'none';
                 const grid = document.getElementById('tripGrid');
                 grid.innerHTML = '';
                 const data = snapshot.val();
                 if (data) {
-                    // 依時間排序
-                    const sortedKeys = Object.keys(data).sort((a,b) => data[b].order - data[a].order);
-                    sortedKeys.forEach(id => renderCard(id, data[id]));
+                    // 5. 修正排序順序 (舊的在前，新的在後，確保從右側生成)
+                    const keys = Object.keys(data).sort((a,b) => data[a].order - data[b].order);
+                    keys.forEach(id => renderCard(id, data[id]));
                 }
             });
         }
@@ -119,6 +124,7 @@
         function renderCard(id, item) {
             const html = `
                 <article class="trip-card" data-id="${id}">
+                    <div class="drag-handle">🖐️</div>
                     <div class="img-container">
                         <div class="img-edit-gear" onclick="openImgModal('${id}')">⚙️</div>
                         <img src="${item.img}" class="trip-img">
@@ -126,13 +132,13 @@
                     <div class="card-tools">
                         <button class="btn-action">查看</button>
                         <button class="btn-action btn-edit" onclick="toggleEdit(this, '${id}')">編輯</button>
-                        <button class="btn-action" style="color:var(--danger-color)" onclick="deleteTrip('${id}')">刪除</button>
+                        <button class="btn-action" style="color:var(--danger-color)" onclick="askDelete('${id}')">刪除</button>
                     </div>
                     <div class="trip-info">
                         <div class="trip-date editable" data-field="date">${item.date}</div>
                         <h3 class="trip-title editable" data-field="title">${item.title}</h3>
                         <p class="trip-desc editable" data-field="desc">${item.desc}</p>
-                        <div class="star-rating" onclick="handleRating(event, '${id}')">
+                        <div class="star-rating" id="star-${id}" onclick="handleRating(event, '${id}')">
                             ${generateStars(item.rating)}
                         </div>
                     </div>
@@ -152,24 +158,30 @@
                 img: `https://images.unsplash.com/photo-${randomImg}?auto=format&fit=crop&w=600&q=80`,
                 title: "新目的地",
                 date: "2026.02.05",
-                desc: "點擊編輯來分享你的旅程...",
+                desc: "點擊編輯來分享旅程...",
                 rating: 0,
                 order: Date.now()
             });
         }
 
-        function deleteTrip(id) {
-            if(confirm("確定要刪除這段雲端紀錄嗎？")) db.ref('trips/' + id).remove();
+        function askDelete(id) {
+            document.getElementById('deleteModal').style.display = 'flex';
+            document.getElementById('confirmDeleteBtn').onclick = () => {
+                db.ref('trips/' + id).remove();
+                closeModal('deleteModal');
+            };
         }
 
         function toggleEdit(btn, id) {
             const card = btn.closest('.trip-card');
             const isEditing = btn.classList.contains('active');
             const editables = card.querySelectorAll('.editable');
+            const stars = card.querySelector('.star-rating');
 
             if (!isEditing) {
                 editables.forEach(el => { el.contentEditable = true; el.classList.add('editing-mode'); });
-                btn.innerText = "儲存中...";
+                stars.classList.add('can-edit');
+                btn.innerText = "儲存";
                 btn.classList.add('active');
             } else {
                 const updates = {};
@@ -178,33 +190,57 @@
                     el.contentEditable = false;
                     el.classList.remove('editing-mode');
                 });
-                db.ref('trips/' + id).update(updates).then(() => {
-                    btn.innerText = "編輯";
-                    btn.classList.remove('active');
-                });
+                stars.classList.remove('can-edit');
+                db.ref('trips/' + id).update(updates);
+                btn.innerText = "編輯";
+                btn.classList.remove('active');
             }
         }
 
+        // 3. 修正星星點選後不自動關閉編輯
         function handleRating(e, id) {
+            const container = document.getElementById('star-' + id);
+            if (!container.classList.contains('can-edit')) return;
             if (e.target.tagName === 'SPAN') {
-                const val = e.target.dataset.value;
-                db.ref('trips/' + id).update({ rating: parseInt(val) });
+                const val = parseInt(e.target.dataset.value);
+                db.ref('trips/' + id).update({ rating: val });
             }
         }
 
         let targetIdForImg = null;
         function openImgModal(id) { targetIdForImg = id; document.getElementById('imgModal').style.display='flex'; }
         function closeModal(id) { document.getElementById(id).style.display='none'; }
+        
         function applyImageChange() {
-            const url = document.getElementById('imgUrlInput').value;
-            if(url) {
-                db.ref('trips/' + targetIdForImg).update({ img: url });
-                closeModal('imgModal');
-                document.getElementById('imgUrlInput').value = '';
+            const urlInput = document.getElementById('imgUrlInput');
+            const fileInput = document.getElementById('imgFileInput');
+            
+            if (fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    db.ref('trips/' + targetIdForImg).update({ img: e.target.result });
+                    finishImgChange();
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else if (urlInput.value) {
+                db.ref('trips/' + targetIdForImg).update({ img: urlInput.value });
+                finishImgChange();
             }
         }
+        function finishImgChange() {
+            closeModal('imgModal');
+            document.getElementById('imgUrlInput').value = '';
+            document.getElementById('imgFileInput').value = '';
+        }
 
-        new Sortable(document.getElementById('tripGrid'), { animation: 200 });
+        // 7 & 8. 限制拖曳把手與滑鼠指標
+        new Sortable(document.getElementById('tripGrid'), { 
+            animation: 200, 
+            handle: '.drag-handle',
+            onEnd: function() {
+                // 可在此實作拖曳後永久排序雲端順序
+            }
+        });
     </script>
 </body>
 </html>
