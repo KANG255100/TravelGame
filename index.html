@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.6</title>
+    <title>我的旅遊雲端手帳 v1.4.7</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -130,37 +130,39 @@
         </div>
     </div>
 
-    <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:320px;" onclick="event.stopPropagation()">
-        <h3 style="text-align:center; margin-top:0;">💰 記帳/編輯</h3>
-    
-        <label style="font-size:0.8rem; color:#666;">支出日期</label>
-        <input type="date" id="expDate">
+    <div class="modal-overlay" id="financeModal" onclick="closeModal('financeModal')">
+        <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:320px;" onclick="event.stopPropagation()">
+            <h3 style="text-align:center; margin-top:0;">💰 記帳/編輯</h3>
+        
+            <label style="font-size:0.8rem; color:#666;">支出日期</label>
+            <input type="date" id="expDate">
 
-        <input type="number" id="expAmount" placeholder="金額" inputmode="decimal">
-    
-        <div style="display:flex; gap:5px; align-items:center;">
-            <select id="expCurrency" onchange="checkCurrency()" style="flex:1;">
-                <option value="TWD">TWD (台幣)</option>
-                <option value="JPY">JPY (日幣)</option>
-                <option value="KRW">KRW (韓元)</option>
+            <input type="number" id="expAmount" placeholder="金額" inputmode="decimal">
+        
+            <div style="display:flex; gap:5px; align-items:center;">
+                <select id="expCurrency" onchange="checkCurrency()" style="flex:1;">
+                    <option value="TWD">TWD (台幣)</option>
+                    <option value="JPY">JPY (日幣)</option>
+                    <option value="KRW">KRW (韓元)</option>
+                </select>
+                <input type="number" id="expRate" placeholder="匯率" step="0.0001" style="flex:1;" inputmode="decimal">
+            </div>
+        
+            <select id="expCategory">
+                <option value="住宿">🏨 住宿</option>
+                <option value="交通">🚗 交通</option>
+                <option value="吃喝">🍴 吃喝</option>
+                <option value="娛樂">🎡 娛樂</option>
+                <option value="購物">🛍️ 購物</option>
+                <option value="其他">❓ 其他</option>
             </select>
-            <input type="number" id="expRate" placeholder="匯率" step="0.0001" style="flex:1;" inputmode="decimal">
-        </div>
-    
-        <select id="expCategory">
-            <option value="住宿">🏨 住宿</option>
-            <option value="交通">🚗 交通</option>
-            <option value="吃喝">🍴 吃喝</option>
-            <option value="娛樂">🎡 娛樂</option>
-            <option value="購物">🛍️ 購物</option>
-            <option value="其他">❓ 其他</option>
-        </select>
-    
-        <input type="text" id="expNote" placeholder="備註">
-    
-        <div style="display:flex; gap:10px; margin-top:15px;">
-            <button class="btn-action" style="background:var(--primary-color); color:white;" onclick="saveExpense()">儲存</button>
-            <button class="btn-action" onclick="cancelFinance()">取消</button>
+        
+            <input type="text" id="expNote" placeholder="備註">
+        
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-action" style="background:var(--primary-color); color:white;" onclick="saveExpense()">儲存</button>
+                <button class="btn-action" onclick="cancelFinance()">取消</button>
+            </div>
         </div>
     </div>
 
@@ -365,33 +367,29 @@
                 const content = document.getElementById('itineraryContent');
                 content.innerHTML = '<h3>📊 旅程消費明細</h3>';
                 let totalTWD = 0;
-        
                 const list = [];
-                snap.forEach(c => { 
-                    let data = c.val();
-                    data.id = c.key; // 紀錄 Firebase 的 ID 以供編輯/刪除
-                    list.push(data); 
-                });
-
-                // 修改排序：舊的在上面，新的在下面 (問題 1)
+                snap.forEach(c => { let d = c.val(); d.id = c.key; list.push(d); });
                 list.sort((a, b) => new Date(a.date) - new Date(b.date));
 
                 list.forEach(e => {
-                    const twd = e.amount * (exchangeRates[e.currency] || 1);
+                    const usedRate = e.exchangeRate || 1; // 讀取該筆交易存下的匯率
+                    const twd = e.amount * usedRate;
                     totalTWD += twd;
+
                     content.innerHTML += `
-                        <div class="finance-item" style="position:relative; padding-right: 40px;">
+                        <div class="finance-item" style="position:relative; padding-right: 45px;">
                             <div>
                                 <small style="color:#999; display:block;">${e.date || '無日期'}</small>
                                 <span class="cat-tag" style="background:var(--primary-color)">${e.category}</span> ${e.note}
+                                ${e.currency !== 'TWD' ? `<small style="color:#aaa; display:block;">匯率: ${usedRate}</small>` : ''}
                             </div>
                             <div style="text-align:right">
                                 <b>${e.amount} ${e.currency}</b><br>
-                                <small>NT$ ${Math.round(twd)}</small>
+                                <small style="color:var(--primary-color);">NT$ ${Math.round(twd)}</small>
                             </div>
-                            <div style="position:absolute; right:0; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:5px;">
-                                <button onclick="editFinanceItem('${e.id}')" style="border:none; background:none; cursor:pointer; font-size:14px;">✏️</button>
-                                <button onclick="deleteFinanceItem('${e.id}')" style="border:none; background:none; cursor:pointer; font-size:14px;">🗑️</button>
+                            <div style="position:absolute; right:0; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px;">
+                                <button onclick="editFinanceItem('${e.id}')" style="border:none; background:none; cursor:pointer; font-size:16px;">✏️</button>
+                                <button onclick="deleteFinanceItem('${e.id}')" style="border:none; background:none; cursor:pointer; font-size:16px;">🗑️</button>
                             </div>
                         </div>`;
                 });
@@ -403,11 +401,20 @@
 
         // 2. 刪除單筆紀錄
         function deleteFinanceItem(itemId) {
-            if(confirm("確定要刪除這筆支出嗎？")) {
+            const modal = document.getElementById('confirmModal');
+            const msg = document.getElementById('confirmMsg');
+            const yesBtn = document.getElementById('modalYes');
+    
+            msg.innerText = "確定要刪除這筆支出紀錄嗎？";
+            modal.style.display = 'flex';
+    
+            // 綁定點擊事件
+            yesBtn.onclick = () => {
                 db.ref(`trips/${currentTripId}/finance/${itemId}`).remove().then(() => {
-                    loadFinanceReport(); // 重新讀取畫面
+                    closeModal('confirmModal');
+                    loadFinanceReport();
                 });
-            }
+            };
         }
 
         // 3. 編輯單筆紀錄 (讀取資料回填到 Modal)
@@ -537,6 +544,7 @@
     </script>
 </body>
 </html>
+
 
 
 
