@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.8</title>
+    <title>我的旅遊雲端手帳 v1.4.9</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -378,29 +378,30 @@
                 list.sort((a, b) => new Date(a.date) - new Date(b.date));
 
                 list.forEach(e => {
-                    const usedRate = e.exchangeRate || 1; // 讀取該筆交易存下的匯率
+                    const usedRate = e.exchangeRate || 1;
                     const twd = e.amount * usedRate;
                     totalTWD += twd;
 
                     content.innerHTML += `
-                        <div class="finance-item" style="position:relative; padding-right: 45px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 12px 0;">
-                            <div style="flex: 1;">
-                                <small style="color:#999; display:block;">${e.date || '無日期'}</small>
-                                <span class="cat-tag" style="background:var(--primary-color)">${e.category}</span> 
-                                <span style="word-break: break-all;">${e.note}</span>
-                            </div>
-            
-                            <div style="text-align:right; flex-shrink: 0;">
-                                <b style="font-size: 1.1rem;">${e.amount.toLocaleString()} ${e.currency}</b><br>
-                                <div style="line-height: 1.2;">
-                                    <small style="color:var(--primary-color); font-weight:bold;">NT$ ${Math.round(twd).toLocaleString()}</small>
-                                    ${e.currency !== 'TWD' ? `<div style="font-size:0.65rem; color:#bbb;">(@${usedRate})</div>` : ''}
+                        <div class="finance-item" style="display: flex; align-items: stretch; border-bottom: 1px solid #eee; padding: 15px 5px; gap: 10px;">
+                            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
+                                <small style="color:#999; margin-bottom: 4px;">${e.date || '無日期'}</small>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="cat-tag" style="background:var(--primary-color); margin:0; flex-shrink: 0;">${e.category}</span>
+                                    <span style="font-size: 0.95rem; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;">${e.note}</span>
                                 </div>
                             </div>
+            
+                            <div style="width: 100px; text-align: right; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0;">
+                                <div style="font-weight: 900; font-size: 1rem; color: #000;">${Math.round(e.amount).toLocaleString()}</div>
+                                <div style="font-size: 0.75rem; color: #666; margin-top: -2px;">${e.currency}</div>
+                                <div style="color: var(--primary-color); font-weight: bold; font-size: 0.85rem; margin-top: 2px;">NT$ ${Math.round(twd).toLocaleString()}</div>
+                                ${e.currency !== 'TWD' ? `<div style="font-size: 0.65rem; color: #bbb;">(@${usedRate})</div>` : ''}
+                            </div>
 
-                            <div style="position:absolute; right:0; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px;">
-                                <button onclick="editFinanceItem('${e.id}')" style="border:none; background:none; cursor:pointer; font-size:16px; padding: 4px;">✏️</button>
-                                <button onclick="deleteFinanceItem('${e.id}')" style="border:none; background:none; cursor:pointer; font-size:16px; padding: 4px;">🗑️</button>
+                            <div style="display: flex; flex-direction: column; justify-content: space-around; padding-left: 10px; border-left: 1px solid #f0f0f0; flex-shrink: 0;">
+                                <div onclick="editFinanceItem('${e.id}')" style="cursor:pointer; font-size: 1.2rem; padding: 5px; text-align: center;">✏️</div>
+                                <div onclick="deleteFinanceItem('${e.id}')" style="cursor:pointer; font-size: 1.2rem; padding: 5px; text-align: center;">🗑️</div>
                             </div>
                         </div>`;
                 });
@@ -555,6 +556,7 @@
     </script>
 </body>
 </html>
+
 
 
 
