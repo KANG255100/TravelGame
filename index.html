@@ -146,7 +146,18 @@
         let currentMode = 'view', isReportMode = false, currentEditingItemIdx = null, sortableInstance = null;
         const exchangeRates = { JPY: 0.22, TWD: 1, KRW: 0.024 };
 
-        window.onload = () => { loadCloudData(); };
+        window.onload = () => {
+            const banners = [
+                "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1200", 
+                "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200",
+                "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=1200"
+            ];
+            const rand = banners[Math.floor(Math.random() * banners.length)];
+            const bannerEl = document.getElementById('mainBanner');
+            if(bannerEl) bannerEl.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('${rand}')`;
+    
+            loadCloudData();
+        };
 
         function loadCloudData() {
             db.ref('trips').orderByChild('order').on('value', snap => {
@@ -306,8 +317,26 @@
         function askDeleteDay() { showConfirm("捨棄整天？", () => { db.ref(`trips/${currentTripId}/days`).once('value', s => { const d = s.val(); d.splice(currentDayIndex, 1); currentDayIndex = 0; db.ref(`trips/${currentTripId}/days`).set(d); }); }); }
         function askDeleteTrip(id) { showConfirm("刪除旅程？", () => { db.ref('trips/'+id).remove(); }); }
         function showConfirm(msg, cb) { document.getElementById('confirmMsg').innerText = msg; document.getElementById('confirmModal').style.display='flex'; document.getElementById('modalYes').onclick = () => { cb(); closeModal('confirmModal'); }; }
-        function addNewTrip() { const newId = db.ref('trips').push().key; db.ref('trips/' + newId).set({ img: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600", title: "我的新旅程", date: "2026.02.06", desc: "冒險開始", order: Date.now(), rating: 0, days: [{ items: [{ time: "09:00", place: "首站", note: "..." }] }] }); }
+        function addNewTrip() {
+            const newId = db.ref('trips').push().key;
+            db.ref('trips/' + newId).set({
+                img: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600",
+                title: "我的新旅程", 
+                date: "2026.02.06", 
+                desc: "冒險開始", 
+                order: Date.now(), 
+                rating: 0, 
+                days: [{ items: [{ time: "09:00", place: "首站", note: "..." }] }]
+            }).then(() => {
+                // 核心修復：新增後自動對焦
+                setTimeout(() => {
+                    const el = document.getElementById('card-' + newId);
+                    if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300); // 稍微延遲確保 Firebase 監聽已渲染畫面
+            });
+        }
         new Sortable(document.getElementById('tripGrid'), { animation: 200, handle: '.drag-handle', onEnd: () => { document.querySelectorAll('.trip-card').forEach((c, i) => db.ref('trips/' + c.dataset.id).update({ order: i })); } });
     </script>
 </body>
 </html>
+
