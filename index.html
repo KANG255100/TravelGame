@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.10</title>
+    <title>我的旅遊雲端手帳 v1.4.11</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -54,20 +54,35 @@
 
         .itinerary-content { flex-grow: 1; overflow-y: auto; padding: 20px; background: #fdfdfd; -webkit-overflow-scrolling: touch; }
 
+        /* 2. 找回綠色左邊線 & 3. 加大項目間距 */
+        .itinerary-item {
+            border-left: 4px solid var(--primary-color); /* 綠色邊線回歸 */
+            margin-bottom: 35px;    /* 加大每個行程項目之間的距離 */
+            padding-left: 18px;    /* 增加內部間距 */
+            position: relative;
+            background: white;
+        }
+        
         /* 時間框美化：放大並對齊按鈕 */
         .itinerary-item input[type="time"] {
             border: 1px solid #ddd;
-            padding: 6px 10px;
+            padding: 6px 8px;
             border-radius: 8px;
             font-size: 1rem;
             color: #333;
             background-color: #f9f9f9;
-            height: 40px; /* 這裡調高，跟Google按鈕一樣大 */
-            width: 120px;
+            height: 40px;
+            width: auto;           /* 改為 auto，讓它根據內容自動撐開 */
+            min-width: 130px;      /* 確保在不同手機上分鐘都能顯示完整 */
             cursor: pointer;
             box-sizing: border-box;
-        }
+        }    
 
+        /* 4. 確保拖曳手把在編輯模式出現 */
+        .edit-mode-active .item-drag-handle {
+            display: flex !important; /* 強制顯示拖曳手把 */
+        }
+        
         /* 編輯模式下的虛線框 (需求 3) */
         .edit-mode-active .item-place-title, 
         .edit-mode-active .item-note-text {
@@ -334,16 +349,22 @@
                         (day.items || []).forEach((item, itemIdx) => {
                             content.innerHTML += `
                                 <div class="itinerary-item ${isPanelEditMode?'edit-mode-active':''} ${isDeleteMode?'delete-mode-active':''}" data-idx="${itemIdx}">
-                                    <div class="item-drag-handle">⠿</div>
-                                    ${isDeleteMode ? `<div style="position:absolute; right:0; top:0; background:var(--danger-color); color:white; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="askDeleteItem(${itemIdx})">✕</div>` : ''}
                                     
-                                    <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center;">
+                                    <div class="item-drag-handle">⠿</div>
+                                    
+                                    ${isDeleteMode ? `
+                                        <div style="position:absolute; right:10px; top:10px; background:var(--danger-color); color:white; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:100; font-weight:bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" 
+                                             onclick="askDeleteItem(${itemIdx})">✕</div>
+                                    ` : ''}
+                                    
+                                    <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center; flex-wrap: wrap;">
                                         <input type="time" value="${item.time || '00:00'}" ${!isPanelEditMode?'disabled':''} onchange="updateItemField(${itemIdx}, 'time', this.value)">
-                                        <button class="btn-maps ${item.mapUrl ? 'linked' : ''}" style="height:40px; ${isDeleteMode?'opacity:0.3; pointer-events:none;':''}" onclick="handleMapAction(${itemIdx}, '${item.mapUrl || ''}')">📍 Google地點</button>
+                                        <button class="btn-maps ${item.mapUrl ? 'linked' : ''}" 
+                                                style="height:40px; ${isDeleteMode?'opacity:0.3; pointer-events:none;':''}" 
+                                                onclick="handleMapAction(${itemIdx}, '${item.mapUrl || ''}')">📍 Google地點</button>
                                     </div>
                                     
                                     <div class="item-place-title" contenteditable="${isPanelEditMode}" onblur="updateItemField(${itemIdx}, 'place', this.innerText)">${item.place}</div>
-                                    
                                     <div class="item-note-text" contenteditable="${isPanelEditMode}" onblur="updateItemField(${itemIdx}, 'note', this.innerText)">${item.note}</div>
                                 </div>`;
                         });
@@ -597,6 +618,7 @@
     </script>
 </body>
 </html>
+
 
 
 
