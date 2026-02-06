@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.17</title>
+    <title>我的旅遊雲端手帳 v1.4.18</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -130,11 +130,13 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 4000; backdrop-filter: blur(4px); }
         /* 記帳對話框：所有格子基礎統一樣式 */
         .modal-content input, 
-        .modal-content select {
+        .modal-content select,
+        #exDate  {
+            background-color: #ffffff !important; /* 移除原本的灰色，改為純白 */
             width: 100% !important;   /* 強制所有格子填滿寬度 */
             height: 45px !important;  /* 強制所有格子高度固定為 45 像素 */
             box-sizing: border-box !important; /* 強制寬度包含邊框與內距，解決溢出問題 */
-            margin: 10px 0 !important; /* 統一上下間距 */
+            margin: 8px 0 !important; /* 統一上下間距 */
             padding: 10px 12px !important;
             border: 1px solid #ccc !important;
             border-radius: 8px !important;
@@ -142,6 +144,18 @@
             display: block !important;
             appearance: none;         /* 移除瀏覽器對輸入框的預設外觀 */
             -webkit-appearance: none; /* 針對 Safari/Chrome 移除預設外觀 */
+        }
+
+        /* 針對匯率那一列的間距特別縮減 */
+        .modal-content div[style*="display: flex"] {
+            width: 100% !important;
+            gap: 10px;
+            margin: 0 !important; /* 移除外層容器的間距 */
+        }
+        
+        /* 確保匯率輸入框在電腦版也是白色 */
+        #expRate {
+            background-color: #ffffff !important;
         }
         
         /* 針對「支出日期」單獨修正：解決右邊多出來或電腦版縮短的問題 */
@@ -215,7 +229,6 @@
         <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:320px;" onclick="event.stopPropagation()">
             <h3 style="text-align:center; margin-top:0;">💰 記帳/編輯</h3>
         
-            <label style="font-size:0.8rem; color:#666;">支出日期</label>
             <input type="date" id="expDate">
 
             <input type="number" id="expAmount" placeholder="金額" inputmode="decimal">
@@ -650,6 +663,7 @@
     </script>
 </body>
 </html>
+
 
 
 
