@@ -114,14 +114,36 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="financeModal">
-        <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:320px;">
+    <div class="modal-overlay" id="financeModal" onclick="closeModal('financeModal')">
+        <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:320px;" onclick="event.stopPropagation()">
             <h3 style="text-align:center; margin-top:0;">💰 新增支出</h3>
+        
+            <label style="font-size:0.8rem; color:#666;">支出日期</label>
+            <input type="date" id="expDate">
+
             <input type="number" id="expAmount" placeholder="金額" inputmode="decimal">
-            <select id="expCurrency"><option value="TWD">TWD (台幣)</option><option value="JPY">JPY (日幣)</option><option value="KRW">KRW (韓元)</option></select>
-            <select id="expCategory"><option value="住宿">🏨 住宿</option><option value="交通">🚗 交通</option><option value="吃喝">🍴 吃喝</option><option value="娛樂">🎡 娛樂</option><option value="購物">🛍️ 購物</option><option value="其他">❓ 其他</option></select>
+        
+            <select id="expCurrency">
+                <option value="TWD">TWD (台幣)</option>
+                <option value="JPY">JPY (日幣)</option>
+                <option value="KRW">KRW (韓元)</option>
+            </select>
+        
+            <select id="expCategory">
+                <option value="住宿">🏨 住宿</option>
+                <option value="交通">🚗 交通</option>
+                <option value="吃喝">🍴 吃喝</option>
+                <option value="娛樂">🎡 娛樂</option>
+                <option value="購物">🛍️ 購物</option>
+                <option value="其他">❓ 其他</option>
+            </select>
+        
             <input type="text" id="expNote" placeholder="備註">
-            <div style="display:flex; gap:10px; margin-top:15px;"><button class="btn-action" style="background:var(--primary-color); color:white;" onclick="saveExpense()">儲存</button><button class="btn-action" onclick="closeModal('financeModal')">取消</button></div>
+        
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-action" style="background:var(--primary-color); color:white;" onclick="saveExpense()">儲存</button>
+                <button class="btn-action" onclick="cancelFinance()">取消</button>
+            </div>
         </div>
     </div>
 
@@ -275,31 +297,89 @@
         }
 
         // --- 記帳邏輯 ---
-        function openFinanceModal() { document.getElementById('financeModal').style.display='flex'; }
+        // --- 記帳功能優化 v1.4.4 ---
+
+        // 修改後的開啟函數：每次開啟都先填入當天日期
+        function openFinanceModal() { 
+            resetFinanceForm(); // 確保每次點開都是乾淨的 (問題 3 & 4)
+            document.getElementById('expDate').valueAsDate = new Date(); // 預設今天
+            document.getElementById('financeModal').style.display = 'flex'; 
+        }
+
+        // 核心：清空表單函數 (解決問題 2, 3, 4)
+        function resetFinanceForm() {
+            document.getElementById('expAmount').value = '';
+            document.getElementById('expNote').value = '';
+            document.getElementById('expCurrency').value = 'TWD';
+            document.getElementById('expCategory').selectedIndex = 0; // 回到第一個「住宿」 (問題 2)
+        }
+
+        // 取消動作 (問題 3)
+        function cancelFinance() {
+            resetFinanceForm();
+            closeModal('financeModal');
+        }
+
+        // 儲存動作 (問題 1 & 4)
         function saveExpense() {
             const amt = document.getElementById('expAmount').value;
-            if(!amt) return;
+            const date = document.getElementById('expDate').value;
+            if(!amt) return alert('請輸入金額');
+    
             db.ref(`trips/${currentTripId}/finance`).push({
-                amount: parseFloat(amt), currency: document.getElementById('expCurrency').value,
-                category: document.getElementById('expCategory').value, note: document.getElementById('expNote').value || '未分類', time: Date.now()
-            }).then(() => { closeModal('financeModal'); if(isReportMode) loadFinanceReport(); });
+                date: date, // 儲存日期 (問題 1)
+                amount: parseFloat(amt),
+                currency: document.getElementById('expCurrency').value,
+                category: document.getElementById('expCategory').value,
+                note: document.getElementById('expNote').value || '未分類',
+                time: Date.now()
+            }).then(() => {
+                resetFinanceForm(); // 儲存成功後立即清空 (問題 4)
+                closeModal('financeModal');
+                if(isReportMode) loadFinanceReport();
+            });
         }
+
+        // 修改報表顯示：加入日期標示 (問題 1)
         function loadFinanceReport() {
             db.ref(`trips/${currentTripId}/finance`).once('value', snap => {
                 const content = document.getElementById('itineraryContent');
                 content.innerHTML = '<h3>📊 旅程消費明細</h3>';
                 let totalTWD = 0;
-                snap.forEach(c => {
-                    const e = c.val(); const twd = e.amount * (exchangeRates[e.currency] || 1); totalTWD += twd;
-                    content.innerHTML += `<div class="finance-item"><div><span class="cat-tag" style="background:var(--primary-color)">${e.category}</span> ${e.note}</div><div style="text-align:right"><b>${e.amount} ${e.currency}</b><br><small>NT$ ${Math.round(twd)}</small></div></div>`;
+        
+                // 將資料轉為陣列並按日期排序
+                const list = [];
+                snap.forEach(c => { list.push(c.val()); });
+                list.sort((a, b) => new Date(b.date) - new Date(a.date)); // 依日期倒序排
+
+                list.forEach(e => {
+                    const twd = e.amount * (exchangeRates[e.currency] || 1);
+                    totalTWD += twd;
+                    content.innerHTML += `
+                        <div class="finance-item">
+                            <div>
+                                <small style="color:#999; display:block;">${e.date || '無日期'}</small>
+                                <span class="cat-tag" style="background:var(--primary-color)">${e.category}</span> ${e.note}
+                            </div>
+                            <div style="text-align:right">
+                                <b>${e.amount} ${e.currency}</b><br>
+                                <small>NT$ ${Math.round(twd)}</small>
+                            </div>
+                        </div>`;
                 });
-                content.insertAdjacentHTML('afterbegin', `<div class="report-summary"><small>總支出</small><div style="font-size:2rem; font-weight:900; color:var(--primary-color);">NT$ ${Math.round(totalTWD).toLocaleString()}</div></div>`);
+        
+                const summaryHtml = `<div class="report-summary"><small>預估總支出</small><div style="font-size:2rem; font-weight:900; color:var(--primary-color);">NT$ ${Math.round(totalTWD).toLocaleString()}</div></div>`;
+                content.insertAdjacentHTML('afterbegin', summaryHtml);
             });
         }
 
         // --- 基礎工具 (保留 v1.3.0) ---
         function closeSidePanel() { document.getElementById('sidePanel').classList.remove('open'); document.getElementById('body').style.overflow = 'auto'; if(currentTripId) db.ref(`trips/${currentTripId}/days`).off(); }
-        function closeModal(id) { document.getElementById(id).style.display='none'; }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+            // 額外保險：關閉時強制讓所有輸入框失去焦點，防止手機鍵盤卡住
+            document.querySelectorAll('input, select').forEach(el => el.blur());
+        }        
         function handleMapAction(idx, url) { if (isPanelEditMode) { currentEditingItemIdx = idx; document.getElementById('mapUrlInput').value = url; document.getElementById('mapsModal').style.display='flex'; } else if (url) window.open(url, '_blank'); }
         function saveMapInfo() { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${currentEditingItemIdx}`).update({ mapUrl: document.getElementById('mapUrlInput').value }); closeModal('mapsModal'); }
         function updateItemField(idx, f, v) { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${idx}`).update({ [f]: v }); }
@@ -339,4 +419,5 @@
     </script>
 </body>
 </html>
+
 
