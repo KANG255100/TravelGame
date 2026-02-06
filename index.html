@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.2.7</title>
+    <title>我的旅遊雲端手帳 v1.2.8</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -16,59 +16,56 @@
         html, body { overflow-x: hidden; width: 100%; position: relative; margin: 0; padding: 0; }
         body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); padding-bottom: 50px; }
         
-        /* --- 主頁面 UI 還原 (v1.2.5) --- */
+        /* 1. 手機版標題縮小 */
         .top-banner { width: 100%; height: 320px; background-size: cover; background-position: center; display: flex; justify-content: center; align-items: center; color: white; position: relative; }
         .top-banner h1 { font-family: 'Caveat', cursive; font-size: 5rem; margin: 0; transform: rotate(-4deg); text-shadow: 3px 6px 15px rgba(0,0,0,0.4); text-align: center; }
+        @media (max-width: 600px) { .top-banner h1 { font-size: 3rem; transform: rotate(-2deg); } }
+
         .main-content { max-width: 1100px; margin: 30px auto 0; padding: 0 15px; }
         .header-actions { background: var(--white); padding: 15px 20px; border-radius: 12px; box-shadow: var(--shadow); display: flex; justify-content: flex-end; margin-bottom: 25px; }
-        
         .grid-system { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         .trip-card { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 450px; position: relative; }
-        .drag-handle { position: absolute; top: 12px; left: 12px; width: 36px; height: 36px; background: rgba(255,255,255,0.9); border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: grab; font-size: 18px; }
         
-        /* 旋轉齒輪還原 */
         .img-container { position: relative; width: 100%; height: 180px; background: #333; }
         .trip-img { width: 100%; height: 100%; object-fit: cover; }
         .img-edit-gear { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; background: rgba(255,255,255,0.9); border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: pointer; font-size: 20px; transition: transform 0.6s ease; }
         .img-edit-gear:hover { transform: rotate(180deg); }
 
         .card-tools { padding: 10px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; gap: 6px; }
-        .btn-action { flex: 1; border: none; height: 38px; border-radius: 6px; font-weight: 900; cursor: pointer; background: #eee; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; color: #333; text-decoration: none; }
+        .btn-action { flex: 1; border: none; height: 38px; border-radius: 6px; font-weight: 900; cursor: pointer; background: #eee; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; color: #333; }
         
         .trip-info { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
-        .editable { outline: none; border-radius: 4px; padding: 2px 5px; word-break: break-all; }
+        .editable { outline: none; border-radius: 4px; padding: 2px 5px; }
         .editing-mode { background-color: #fffde7; border: 1px dashed #ffa000; }
-        .star-rating { color: #e0e0e0; font-size: 1.5rem; margin-top: auto; }
+        .star-rating { color: #e0e0e0; font-size: 1.5rem; margin-top: auto; cursor: pointer; }
         .star-rating .filled { color: var(--star-color); }
 
-        /* --- 詳情視窗 UI 還原與精修 --- */
-        .side-panel { position: fixed; top: 0; right: -100%; width: 80%; height: 100%; background: white; box-shadow: -10px 0 30px rgba(0,0,0,0.25); z-index: 3000; transition: right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); display: flex; flex-direction: column; overflow: hidden; }
+        /* 彈出視窗排版 */
+        .side-panel { position: fixed; top: 0; right: -100%; width: 80%; height: 100%; background: white; box-shadow: -10px 0 30px rgba(0,0,0,0.25); z-index: 3000; transition: right 0.4s ease; display: flex; flex-direction: column; overflow: hidden; }
         .side-panel.open { right: 0; }
         @media (max-width: 600px) { .side-panel { width: 100%; } }
 
-        /* 標題與按鈕佈局修復 */
+        /* 5. 標題自動換行修復 (編輯與刪除模式同步) */
         .panel-header { padding: 15px 20px; background: var(--primary-color); color: white; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-shrink: 0; }
         #panelTitle { margin: 0; font-size: 1.2rem; line-height: 1.4; word-break: break-all; white-space: normal; flex: 1; }
+        
+        /* 2. 手機版按鈕垂直排列 */
         .header-right { display: flex; gap: 8px; flex-shrink: 0; }
-        .panel-ctrl-btn { padding: 6px 10px; border-radius: 20px; background: rgba(0,0,0,0.2); border: 1px solid white; color: white; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
+        @media (max-width: 600px) { .header-right { flex-direction: column; } }
+        .panel-ctrl-btn { padding: 6px 12px; border-radius: 20px; background: rgba(0,0,0,0.2); border: 1px solid white; color: white; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
         .panel-ctrl-btn.active { background: white; color: var(--primary-color); }
 
-        /* 行程項目修復 */
-        .itinerary-content { flex-grow: 1; overflow-y: auto; padding: 20px; background: #fdfdfd; overflow-x: hidden; }
+        /* 3 & 4. 編輯模式下的拖曳與滑動修復 */
+        .itinerary-content { flex-grow: 1; overflow-y: auto; padding: 20px; background: #fdfdfd; -webkit-overflow-scrolling: touch; }
         .itinerary-item { border-left: 3px solid var(--primary-color); margin-bottom: 25px; padding-left: 15px; position: relative; background: white; }
         
-        /* 備註對齊回歸 */
-        .item-note { font-size: 0.95rem; color: #666; outline: none; line-height: 1.6; word-break: break-all; text-align: justify; }
-
-        /* 手機拖曳關鍵修復 */
-        .edit-mode-active { touch-action: none !important; -webkit-user-select: none; }
-        .item-drag-handle { position: absolute; left: -15px; top: 10px; width: 35px; height: 40px; background: #eee; border: 1px solid #ccc; border-radius: 4px; display: none; align-items: center; justify-content: center; cursor: grab; z-index: 50; }
+        /* 僅把手鎖定觸控動作，其餘區域可滑動 */
+        .item-drag-handle { position: absolute; left: -15px; top: 10px; width: 35px; height: 40px; background: #eee; border: 1px solid #ccc; border-radius: 4px; display: none; align-items: center; justify-content: center; cursor: grab; z-index: 50; touch-action: none; }
         .edit-mode-active .item-drag-handle { display: flex; }
+        .item-note { font-size: 0.95rem; color: #666; outline: none; line-height: 1.6; text-align: justify; }
 
-        .btn-maps { padding: 6px 12px; border-radius: 6px; border: 1px solid #4285F4; background: white; color: #4285F4; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
-        .btn-maps.linked { background: #4285F4; color: white; }
-        .delete-mode-active .btn-maps { opacity: 0.4; cursor: not-allowed !important; pointer-events: none; }
-
+        /* 彈窗對稱修正 */
+        .modal-content input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; display: block; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 4000; backdrop-filter: blur(4px); }
     </style>
 </head>
@@ -87,7 +84,7 @@
         <div class="panel-header">
             <div style="display:flex; align-items:flex-start; gap:10px; flex:1;">
                 <span style="cursor:pointer; font-size:24px;" onclick="closeSidePanel()">✕</span>
-                <h2 id="panelTitle">...</h2>
+                <h2 id="panelTitle">讀取中...</h2>
             </div>
             <div class="header-right">
                 <button id="editToggle" class="panel-ctrl-btn" onclick="togglePanelEdit()">🔓 編輯</button>
@@ -104,23 +101,37 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="mapsModal"><div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:350px; text-align:center;">
-        <h3 style="margin-top:0;">📍 設定 Google 地點</h3>
-        <p style="font-size: 0.8rem; color: #e63946; font-weight: bold; margin-bottom: 15px;">⚠️ 填寫完後請務必點擊檢查正確性！</p>
-        <input type="text" id="mapUrlInput" placeholder="貼上連結" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px;">
-        <div style="display:flex; gap:10px;"><button class="btn-action" style="background:var(--primary-color); color:white; flex:1;" onclick="saveMapInfo()">儲存</button><button class="btn-action" style="flex:1;" onclick="closeModal('mapsModal')">取消</button></div>
-    </div></div>
+    <div class="modal-overlay" id="imgModal">
+        <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:350px;">
+            <h3 style="text-align:center; margin-top:0;">更換封面照片</h3>
+            <label style="font-size:0.8rem; color:#666;">方式 A：貼上圖片網址</label>
+            <input type="text" id="imgUrlInput" placeholder="https://...">
+            <label style="font-size:0.8rem; color:#666;">方式 B：從裝置上傳</label>
+            <input type="file" id="imgFileInput" accept="image/*" style="border:none; padding:5px 0;">
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-action" style="background:var(--primary-color); color:white; flex:1;" onclick="applyImageChange()">確定</button>
+                <button class="btn-action" style="flex:1;" onclick="closeModal('imgModal')">取消</button>
+            </div>
+        </div>
+    </div>
 
-    <div class="modal-overlay" id="imgModal"><div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:350px; text-align:center;">
-        <h3>更換封面照片</h3><input type="text" id="imgUrlInput" placeholder="輸入圖片 URL" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc;"><div style="display:flex; gap:10px;"><button class="btn-action" style="background:var(--primary-color); color:white; flex:1;" onclick="applyImageChange()">確定</button><button class="btn-action" style="flex:1;" onclick="closeModal('imgModal')">取消</button></div>
-    </div></div>
+    <div class="modal-overlay" id="mapsModal">
+        <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:350px;">
+            <h3 style="text-align:center; margin-top:0;">📍 設定 Google 地點</h3>
+            <p style="font-size: 0.8rem; color: #e63946; font-weight: bold; text-align:center;">⚠️ 請貼上 Google Maps 共享連結</p>
+            <input type="text" id="mapUrlInput" placeholder="貼上共享網址">
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn-action" style="background:var(--primary-color); color:white; flex:1;" onclick="saveMapInfo()">儲存連結</button>
+                <button class="btn-action" style="flex:1;" onclick="closeModal('mapsModal')">取消</button>
+            </div>
+        </div>
+    </div>
 
     <div class="modal-overlay" id="confirmModal"><div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:80%; max-width:300px; text-align:center;">
         <h3 id="confirmMsg">確定？</h3><div style="display:flex; gap:10px; margin-top:20px;"><button class="btn-action" style="background:var(--danger-color); color:white; flex:1;" id="modalYes">確定</button><button class="btn-action" style="flex:1;" onclick="closeModal('confirmModal')">取消</button></div>
     </div></div>
 
     <script>
-        // Firebase 配置保持不變
         const firebaseConfig = { apiKey: "AIzaSyA4g7tQuKmPHRYZNdbxWbHFtvc5RnJQVzM", authDomain: "travelgame-91b3a.firebaseapp.com", databaseURL: "https://travelgame-91b3a-default-rtdb.firebaseio.com", projectId: "travelgame-91b3a", storageBucket: "travelgame-91b3a.firebasestorage.app", messagingSenderId: "498309085943", appId: "1:498309085943:web:764dae004f4c9f96d7b1f2" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -128,11 +139,7 @@
         let currentTripId = null, currentDayIndex = 0, isPanelEditMode = false, isDeleteMode = false;
         let currentEditingItemIdx = null;
 
-        window.onload = () => {
-            const banner = "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1200";
-            document.getElementById('mainBanner').style.backgroundImage = `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('${banner}')`;
-            loadCloudData();
-        };
+        window.onload = () => { loadCloudData(); };
 
         function loadCloudData() {
             db.ref('trips').orderByChild('order').on('value', snap => {
@@ -141,11 +148,10 @@
             });
         }
 
-        // --- 還原主頁卡片排版 ---
         function renderCard(id, item) {
             const html = `
-                <article class="trip-card" data-id="${id}">
-                    <div class="drag-handle">🖐️</div>
+                <article class="trip-card" data-id="${id}" id="card-${id}">
+                    <div class="drag-handle" style="position:absolute; top:12px; left:12px; width:36px; height:36px; background:rgba(255,255,255,0.9); border:2px solid #333; border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:100; cursor:grab;">🖐️</div>
                     <div class="img-container">
                         <div class="img-edit-gear" onclick="openImgModal('${id}')">⚙️</div>
                         <img src="${item.img}" class="trip-img">
@@ -153,7 +159,7 @@
                     <div class="card-tools">
                         <button class="btn-action" onclick="openSidePanel('${id}', '${item.title}')">查看行程</button>
                         <button class="btn-action" onclick="toggleEdit(this, '${id}')">編輯標題</button>
-                        <button class="btn-action" style="color:var(--danger-color); flex: 0.4" onclick="askDeleteTrip('${id}')">✕</button>
+                        <button class="btn-action" style="color:var(--danger-color); flex: 0.6" onclick="askDeleteTrip('${id}')">刪除行程</button>
                     </div>
                     <div class="trip-info">
                         <div class="trip-date editable" data-field="date">${item.date}</div>
@@ -165,13 +171,8 @@
             document.getElementById('tripGrid').insertAdjacentHTML('beforeend', html);
         }
 
-        function generateStars(r) { let s=''; for(let i=1; i<=5; i++) s+=`<span class="${i<=r?'filled':''}" data-value="${i}" style="cursor:pointer;">★</span>`; return s; }
-        
-        function handleRating(e, id) {
-            const card = e.currentTarget.closest('.trip-card');
-            if (card.querySelector('.trip-title').contentEditable !== 'true') return;
-            if (e.target.dataset.value) db.ref('trips/'+id).update({rating: parseInt(e.target.dataset.value)});
-        }
+        function generateStars(r) { let s=''; for(let i=1; i<=5; i++) s+=`<span class="${i<=r?'filled':''}" data-value="${i}">★</span>`; return s; }
+        function handleRating(e, id) { if (e.target.dataset.value) db.ref('trips/'+id).update({rating: parseInt(e.target.dataset.value)}); }
 
         function openSidePanel(id, title) {
             currentTripId = id; currentDayIndex = 0; isPanelEditMode = false; isDeleteMode = false;
@@ -182,13 +183,12 @@
         }
 
         function closeSidePanel() { document.getElementById('sidePanel').classList.remove('open'); document.getElementById('body').style.overflow = 'auto'; }
-
         function togglePanelEdit() { isPanelEditMode = !isPanelEditMode; isDeleteMode=false; updateUIState(); loadItinerary(); }
         function toggleDeleteMode() { isDeleteMode = !isDeleteMode; isPanelEditMode=false; updateUIState(); loadItinerary(); }
 
         function updateUIState() {
             document.getElementById('editToggle').classList.toggle('active', isPanelEditMode);
-            document.getElementById('editToggle').innerText = isPanelEditMode ? "🔒 儲存中" : "🔓 編輯";
+            document.getElementById('editToggle').innerText = isPanelEditMode ? "🔒 儲存" : "🔓 編輯";
             document.getElementById('deleteToggle').classList.toggle('active', isDeleteMode);
             document.getElementById('panelFooter').style.display = isDeleteMode ? 'block' : 'none';
         }
@@ -213,14 +213,14 @@
                                     ${isDeleteMode ? `<div style="position:absolute; right:0; top:0; background:var(--danger-color); color:white; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="askDeleteItem(${itemIdx})">✕</div>` : ''}
                                     <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
                                         <input type="time" value="${item.time || '00:00'}" ${!isPanelEditMode ? 'disabled' : ''} onchange="updateItemField(${itemIdx}, 'time', this.value)" style="border:1px solid #ddd; border-radius:4px; padding:2px;">
-                                        <button class="btn-maps ${item.mapUrl ? 'linked' : ''}" onclick="handleMapAction(${itemIdx}, '${item.mapUrl || ''}')">📍 Google地點</button>
+                                        <button class="btn-maps ${item.mapUrl ? 'linked' : ''}" style="${isDeleteMode?'opacity:0.4; pointer-events:none;':''}" onclick="handleMapAction(${itemIdx}, '${item.mapUrl || ''}')">📍 Google地點</button>
                                     </div>
                                     <div style="font-weight:800; font-size:1.1rem; margin-bottom:5px; outline:none;" contenteditable="${isPanelEditMode}" onblur="updateItemField(${itemIdx}, 'place', this.innerText)">${item.place}</div>
                                     <div class="item-note" contenteditable="${isPanelEditMode}" onblur="updateItemField(${itemIdx}, 'note', this.innerText)">${item.note}</div>
                                 </div>`;
                         });
                         if (isPanelEditMode) {
-                            content.innerHTML += `<div onclick="addNewItem()" style="padding:15px; border:2px dashed #ccc; border-radius:12px; text-align:center; cursor:pointer; font-weight:bold; color:#888;">+ 新增行程</div>`;
+                            content.innerHTML += `<div onclick="addNewItem()" style="padding:15px; border:2px dashed #ccc; border-radius:12px; text-align:center; cursor:pointer; font-weight:bold; color:#888;">+ 新增項目</div>`;
                             initSortableItems();
                         }
                     }
@@ -228,18 +228,17 @@
             });
         }
 
-        // 拖曳修復
+        // 4. 行動版拖曳優化：不鎖死滑動
         function initSortableItems() {
             Sortable.create(document.getElementById('itineraryContent'), {
-                handle: '.item-drag-handle', animation: 200, delay: 100, delayOnTouchOnly: true,
+                handle: '.item-drag-handle', animation: 200, delay: 50, delayOnTouchOnly: true,
                 onEnd: () => {
                     const newItems = [];
-                    document.getElementById('itineraryContent').querySelectorAll('.itinerary-item').forEach(el => {
+                    const els = document.getElementById('itineraryContent').querySelectorAll('.itinerary-item');
+                    els.forEach(el => {
                         db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${el.dataset.idx}`).once('value', s => {
                             newItems.push(s.val());
-                            if(newItems.length === document.getElementById('itineraryContent').querySelectorAll('.itinerary-item').length) {
-                                db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(newItems);
-                            }
+                            if(newItems.length === els.length) db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(newItems);
                         });
                     });
                 }
@@ -247,7 +246,6 @@
         }
 
         function handleMapAction(idx, url) {
-            if (isDeleteMode) return;
             if (isPanelEditMode) { currentEditingItemIdx = idx; document.getElementById('mapUrlInput').value = url; document.getElementById('mapsModal').style.display = 'flex'; }
             else if (url) window.open(url, '_blank');
         }
@@ -257,8 +255,7 @@
         function toggleEdit(btn, id) {
             const card = btn.closest('.trip-card');
             const editables = card.querySelectorAll('.editable');
-            const active = btn.innerText === "儲存標題";
-            if (!active) {
+            if (btn.innerText === "編輯標題") {
                 editables.forEach(el => { el.contentEditable = true; el.classList.add('editing-mode'); });
                 btn.innerText = "儲存標題"; btn.style.background = "#2ecc71"; btn.style.color = "white";
             } else {
@@ -270,15 +267,42 @@
         }
 
         function openImgModal(id) { currentTripId = id; document.getElementById('imgModal').style.display='flex'; }
-        function applyImageChange() { if (document.getElementById('imgUrlInput').value) { db.ref('trips/'+currentTripId).update({img: document.getElementById('imgUrlInput').value}); closeModal('imgModal'); } }
+        
+        // 3. 上傳功能實現
+        function applyImageChange() {
+            const file = document.getElementById('imgFileInput').files[0];
+            const url = document.getElementById('imgUrlInput').value;
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => { db.ref('trips/'+currentTripId).update({img: e.target.result}); closeModal('imgModal'); };
+                reader.readAsDataURL(file);
+            } else if (url) {
+                db.ref('trips/'+currentTripId).update({img: url}); closeModal('imgModal');
+            }
+        }
 
         function updateItemField(idx, f, v) { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${idx}`).update({ [f]: v }); }
         function addNewItem() { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).once('value', s => { const i = s.val()||[]; i.push({time:"10:00",place:"新地點",note:"內容"}); db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(i); }); }
-        function addNewDay() { db.ref(`trips/${currentTripId}/days`).once('value', s => { const d = s.val()||[]; d.push({items:[{time:"09:00",place:"首站",note:"..."}]}); db.ref(`trips/${currentTripId}/days`).set(d).then(() => { currentDayIndex = d.length-1; loadItinerary(); }); }); }
+        function addNewDay() { db.ref(`trips/${currentTripId}/days`).once('value', s => { const d = s.val()||[]; d.push({items:[{time:"09:00",place:"新旅程",note:"..."}]}); db.ref(`trips/${currentTripId}/days`).set(d).then(() => { currentDayIndex = d.length-1; loadItinerary(); }); }); }
         function askDeleteItem(idx) { showConfirm("刪除此項？", () => { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).once('value', s => { const i = s.val(); i.splice(idx, 1); db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(i); }); }); }
         function askDeleteDay() { showConfirm("捨棄整天？", () => { db.ref(`trips/${currentTripId}/days`).once('value', s => { const d = s.val(); d.splice(currentDayIndex, 1); currentDayIndex = 0; db.ref(`trips/${currentTripId}/days`).set(d); }); }); }
         function askDeleteTrip(id) { showConfirm("刪除旅程？", () => { db.ref('trips/'+id).remove(); }); }
-        function addNewTrip() { db.ref('trips').push({ img: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600", title: "新旅程", date: "2026.02.06", desc: "開啟冒險", order: Date.now(), rating: 0, days: [{ items: [{ time: "09:00", place: "首站", note: "細節..." }] }] }); }
+
+        // 2. 新增行程自動移動畫面
+        function addNewTrip() {
+            const newId = db.ref('trips').push().key;
+            db.ref('trips/' + newId).set({
+                img: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600",
+                title: "我的新旅程", date: "2026.02.06", desc: "冒險開始", order: Date.now(), rating: 0,
+                days: [{ items: [{ time: "09:00", place: "首站", note: "細節..." }] }]
+            }).then(() => {
+                setTimeout(() => {
+                    const el = document.getElementById('card-' + newId);
+                    if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 500);
+            });
+        }
+
         function showConfirm(msg, cb) { document.getElementById('confirmMsg').innerText = msg; document.getElementById('confirmModal').style.display='flex'; document.getElementById('modalYes').onclick = () => { cb(); closeModal('confirmModal'); }; }
         function closeModal(id) { document.getElementById(id).style.display='none'; }
         
