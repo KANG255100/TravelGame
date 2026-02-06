@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.5</title>
+    <title>我的旅遊雲端手帳 v1.4.6</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -67,12 +67,13 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 4000; backdrop-filter: blur(4px); }
         /* 修正手機版輸入框超出邊界 */
         .modal-content input, .modal-content select {
-            width: 100%; 
-            padding: 10px;
+            width: 100%; !important; /* 強制覆蓋 */
+            max-width: 100%;       /* 確保不超出 */
+            padding: 12px 8px;
             margin: 8px 0;
             border: 1px solid #ccc;
             border-radius: 8px;
-            box-sizing: border-box; /* 關鍵：確保 padding 不會增加總寬度 */
+            box-sizing: border-box; /* 關鍵：寬度計算包含內距 */
             display: block;
             font-size: 16px; /* 防止 iOS 自動放大 */
         }
@@ -129,36 +130,37 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="financeModal" onclick="closeModal('financeModal')">
-        <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:320px;" onclick="event.stopPropagation()">
-            <h3 style="text-align:center; margin-top:0;">💰 新增支出</h3>
-        
-            <label style="font-size:0.8rem; color:#666;">支出日期</label>
-            <input type="date" id="expDate">
+    <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:320px;" onclick="event.stopPropagation()">
+        <h3 style="text-align:center; margin-top:0;">💰 記帳/編輯</h3>
+    
+        <label style="font-size:0.8rem; color:#666;">支出日期</label>
+        <input type="date" id="expDate">
 
-            <input type="number" id="expAmount" placeholder="金額" inputmode="decimal">
-        
-            <select id="expCurrency">
+        <input type="number" id="expAmount" placeholder="金額" inputmode="decimal">
+    
+        <div style="display:flex; gap:5px; align-items:center;">
+            <select id="expCurrency" onchange="checkCurrency()" style="flex:1;">
                 <option value="TWD">TWD (台幣)</option>
                 <option value="JPY">JPY (日幣)</option>
                 <option value="KRW">KRW (韓元)</option>
             </select>
-        
-            <select id="expCategory">
-                <option value="住宿">🏨 住宿</option>
-                <option value="交通">🚗 交通</option>
-                <option value="吃喝">🍴 吃喝</option>
-                <option value="娛樂">🎡 娛樂</option>
-                <option value="購物">🛍️ 購物</option>
-                <option value="其他">❓ 其他</option>
-            </select>
-        
-            <input type="text" id="expNote" placeholder="備註">
-        
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <button class="btn-action" style="background:var(--primary-color); color:white;" onclick="saveExpense()">儲存</button>
-                <button class="btn-action" onclick="cancelFinance()">取消</button>
-            </div>
+            <input type="number" id="expRate" placeholder="匯率" step="0.0001" style="flex:1;" inputmode="decimal">
+        </div>
+    
+        <select id="expCategory">
+            <option value="住宿">🏨 住宿</option>
+            <option value="交通">🚗 交通</option>
+            <option value="吃喝">🍴 吃喝</option>
+            <option value="娛樂">🎡 娛樂</option>
+            <option value="購物">🛍️ 購物</option>
+            <option value="其他">❓ 其他</option>
+        </select>
+    
+        <input type="text" id="expNote" placeholder="備註">
+    
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn-action" style="background:var(--primary-color); color:white;" onclick="saveExpense()">儲存</button>
+            <button class="btn-action" onclick="cancelFinance()">取消</button>
         </div>
     </div>
 
@@ -427,16 +429,43 @@
             });
         }
 
+        // 這個函數專門負責「檢查幣別」
+        function checkCurrency() {
+            // 1. 取得「幣別」選單目前選了什麼
+            const curr = document.getElementById('expCurrency').value;
+            // 2. 取得「匯率」那個輸入框
+            const rateInput = document.getElementById('expRate');
+
+            if (curr === 'TWD') {
+                // 如果是台幣
+                rateInput.value = 1;             // 自動填入 1
+                rateInput.disabled = true;       // 鎖住它 (不能點擊)
+                rateInput.style.backgroundColor = '#f0f0f0'; // 變成灰色
+            } else {
+                // 如果是外幣 (JPY 或 KRW)
+                rateInput.disabled = false;      // 開啟它 (可以點擊輸入)
+                rateInput.style.backgroundColor = '#ffffff'; // 變回白色
+                // 如果是編輯模式，則維持原本讀到的匯率，不要覆蓋
+                if (!editingFinanceId) {
+                    if (curr === 'JPY') rateInput.value = 0.22;
+                    if (curr === 'KRW') rateInput.value = 0.024;
+                }
+            }
+        }
+        
         // 4. 修改 saveExpense 以支援「更新」
         function saveExpense() {
             const amt = document.getElementById('expAmount').value;
+            const rate = document.getElementById('expRate').value; // 取得匯率框的數字
             const date = document.getElementById('expDate').value;
-            if(!amt) return alert('請輸入金額');
+
+            if(!amt || !rate) return alert('請完整輸入金額與匯率');
     
             const data = {
                 date: date,
                 amount: parseFloat(amt),
                 currency: document.getElementById('expCurrency').value,
+                exchangeRate: parseFloat(rate), // 👈 問題 4：把匯率存進 Firebase
                 category: document.getElementById('expCategory').value,
                 note: document.getElementById('expNote').value || '未分類',
                 time: Date.now()
@@ -508,6 +537,7 @@
     </script>
 </body>
 </html>
+
 
 
 
