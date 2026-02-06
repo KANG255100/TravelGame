@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.15</title>
+    <title>我的旅遊雲端手帳 v1.4.16</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -128,40 +128,26 @@
         .cat-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; color: white; margin-right: 5px; font-weight: bold; }
         .report-summary { background: #f0f7f6; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; border: 1px solid var(--primary-color); }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 4000; backdrop-filter: blur(4px); }
-        /* 修正手機版輸入框超出邊界 */
-        .modal-content input, 
-        .modal-content select,
-        #expDate {
-            width: 95% !important;
-            box-sizing: border-box; /* 確保 padding 不會撐破框框 */
-            height: 40px !important; /* 稍微加高，手機更好點擊 */
-            margin: 10px auto !important;
+        /* 統一對話框內所有輸入元件的皮膚 */
+        #financeModal .modal-content input, 
+        #financeModal .modal-content select {
+            display: block;
+            width: 100%; /* 預設先給 100% */
+            height: 45px;
             padding: 10px 12px;
             border: 1px solid #ccc;
             border-radius: 8px;
-            font-size: 16px; /* 防止 iOS 點擊時自動縮放畫面 */
-            display: block;
-        }
-        
-        /* 讓幣別與匯率那一列的間距也保持一致 */
-        .modal-content div[style*="display: flex"] {
-            width: 100%;
-            gap: 10px;
-            margin: 0 !important; /* 移除外距由內元件控制 */
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-bottom: 12px;
         }
 
-        /* 3. 幣別與匯率格子的寬度要平分，且高度要跟別人一樣 */
-        #expCurrency, #expRate {
-            flex: 1; /* 平分寬度 */
-            margin-top: 5px !important;
-        }
-        
-        /* 4. 最後的「決定」按鈕也要對齊 */
-        .modal-content button[onclick="saveFinance()"] {
-            width: 100% !important;
-            height: 48px;
-            margin-top: 10px;
-        }
+/* 唯獨支出日期要縮小並置中 */
+#expDate {
+    width: 95% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
         
     </style>
 </head>
@@ -650,6 +636,7 @@
     </script>
 </body>
 </html>
+
 
 
 
