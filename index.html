@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.2.9</title>
+    <title>我的旅遊雲端手帳 v1.3.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -16,7 +16,6 @@
         html, body { overflow-x: hidden; width: 100%; position: relative; margin: 0; padding: 0; }
         body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); padding-bottom: 50px; }
         
-        /* 1. 大圖樣式保留 */
         .top-banner { width: 100%; height: 320px; background-size: cover; background-position: center; display: flex; justify-content: center; align-items: center; color: white; position: relative; }
         .top-banner h1 { font-family: 'Caveat', cursive; font-size: 5rem; margin: 0; transform: rotate(-4deg); text-shadow: 3px 6px 15px rgba(0,0,0,0.4); text-align: center; }
         @media (max-width: 600px) { .top-banner h1 { font-size: 3rem; transform: rotate(-2deg); } }
@@ -25,18 +24,15 @@
         .header-actions { background: var(--white); padding: 15px 20px; border-radius: 12px; box-shadow: var(--shadow); display: flex; justify-content: flex-end; margin-bottom: 25px; }
         .grid-system { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         
-        /* 行程卡樣式 */
         .trip-card { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 480px; position: relative; }
         .img-container { position: relative; width: 100%; height: 180px; background: #333; flex-shrink: 0; }
         .trip-img { width: 100%; height: 100%; object-fit: cover; }
         .img-edit-gear { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; background: rgba(255,255,255,0.9); border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: pointer; font-size: 20px; transition: transform 0.6s ease; }
         .img-edit-gear:hover { transform: rotate(180deg); }
 
-        /* 2. 按鈕平均分配 (Flex 1) */
         .card-tools { padding: 10px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; gap: 8px; flex-shrink: 0; }
         .btn-action { flex: 1; border: none; height: 38px; border-radius: 6px; font-weight: 900; cursor: pointer; background: #eee; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; color: #333; padding: 0; white-space: nowrap; }
         
-        /* 3 & 4. 標題與描述自動換行修復 */
         .trip-info { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
         .trip-title { margin: 0; font-size: 1.4rem; font-weight: bold; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; }
         .trip-desc { color: #666; font-size: 0.95rem; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; flex-grow: 1; }
@@ -46,7 +42,6 @@
         .star-rating { color: #e0e0e0; font-size: 1.5rem; margin-top: auto; cursor: pointer; flex-shrink: 0; }
         .star-rating .filled { color: var(--star-color); }
 
-        /* 側邊面板 */
         .side-panel { position: fixed; top: 0; right: -100%; width: 80%; height: 100%; background: white; box-shadow: -10px 0 30px rgba(0,0,0,0.25); z-index: 3000; transition: right 0.4s ease; display: flex; flex-direction: column; overflow: hidden; }
         .side-panel.open { right: 0; }
         @media (max-width: 600px) { .side-panel { width: 100%; } }
@@ -59,37 +54,32 @@
         .panel-ctrl-btn { padding: 6px 12px; border-radius: 20px; background: rgba(0,0,0,0.2); border: 1px solid white; color: white; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
         .panel-ctrl-btn.active { background: white; color: var(--primary-color); }
 
-        /* 行程項目列表 */
         .itinerary-content { flex-grow: 1; overflow-y: auto; padding: 20px; background: #fdfdfd; -webkit-overflow-scrolling: touch; }
         .itinerary-item { border-left: 3px solid var(--primary-color); margin-bottom: 25px; padding-left: 15px; position: relative; background: white; padding-right: 5px; }
         
-        /* 9. 手機版拖曳關鍵：把手 touch-action: none */
         .item-drag-handle { 
             position: absolute; left: -15px; top: 10px; width: 40px; height: 40px; 
             background: #eee; border: 1px solid #ccc; border-radius: 4px; 
             display: none; align-items: center; justify-content: center; 
             cursor: grab; z-index: 50; 
-            touch-action: none !important; /* 關鍵修復：防止拖曳時捲動 */
+            touch-action: none !important; 
         }
         .edit-mode-active .item-drag-handle { display: flex; }
 
-        /* 6 & 8. 彈出視窗標題與備註換行修復 */
         .item-title-div { 
             font-weight: 800; font-size: 1.1rem; margin-bottom: 5px; outline: none; 
-            word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; /* 允許換行 */
+            word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; 
             line-height: 1.4;
         }
         .item-note { 
             font-size: 0.95rem; color: #666; outline: none; line-height: 1.6; text-align: justify;
-            word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; /* 4. 允許備註換行 */
+            word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap;
         }
 
-        /* 7. Google 地點按鈕樣式 (藍燈邏輯) */
         .btn-maps { padding: 6px 12px; border-radius: 6px; border: 1px solid #4285F4; background: white; color: #4285F4; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
-        .btn-maps.linked { background: #4285F4; color: white; } /* 藍燈樣式 */
+        .btn-maps.linked { background: #4285F4; color: white; }
         .delete-mode-active .btn-maps { opacity: 0.3; pointer-events: none; }
 
-        /* 彈窗對稱修正與共用 */
         .modal-content input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; display: block; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 4000; backdrop-filter: blur(4px); }
     </style>
@@ -163,8 +153,8 @@
 
         let currentTripId = null, currentDayIndex = 0, isPanelEditMode = false, isDeleteMode = false;
         let currentEditingItemIdx = null;
-        
-        // 1. 大圖功能找回 (window.onload)
+        let sortableInstance = null; // 修正手機拖曳：管理拖曳實例
+
         window.onload = () => {
             const banners = ["https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1200", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200"];
             const rand = banners[Math.floor(Math.random() * banners.length)];
@@ -180,7 +170,6 @@
         }
 
         function renderCard(id, item) {
-            // 2. 按鈕已透過 CSS .btn-action {flex:1} 修正為均分
             const html = `
                 <article class="trip-card" data-id="${id}" id="card-${id}">
                     <div class="drag-handle" style="position:absolute; top:12px; left:12px; width:36px; height:36px; background:rgba(255,255,255,0.9); border:2px solid #333; border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:100; cursor:grab;">🖐️</div>
@@ -214,7 +203,11 @@
             updateUIState(); loadItinerary();
         }
 
-        function closeSidePanel() { document.getElementById('sidePanel').classList.remove('open'); document.getElementById('body').style.overflow = 'auto'; }
+        function closeSidePanel() { 
+            document.getElementById('sidePanel').classList.remove('open'); 
+            document.getElementById('body').style.overflow = 'auto'; 
+            if(currentTripId) db.ref(`trips/${currentTripId}/days`).off(); // 關閉面板時也確保移除監聽
+        }
         function togglePanelEdit() { isPanelEditMode = !isPanelEditMode; isDeleteMode=false; updateUIState(); loadItinerary(); }
         function toggleDeleteMode() { isDeleteMode = !isDeleteMode; isPanelEditMode=false; updateUIState(); loadItinerary(); }
 
@@ -226,7 +219,10 @@
         }
 
         function loadItinerary() {
-            db.ref(`trips/${currentTripId}/days`).on('value', snapshot => {
+            const path = `trips/${currentTripId}/days`;
+            db.ref(path).off(); // 1. 修正天數重複：在加入新監聽前，強制移除舊監聽
+            
+            db.ref(path).on('value', snapshot => {
                 const tabs = document.getElementById('dayTabs'), content = document.getElementById('itineraryContent');
                 tabs.innerHTML = ''; content.innerHTML = '';
                 const days = snapshot.val() || [];
@@ -239,7 +235,6 @@
                     if (index === currentDayIndex) {
                         const items = day.items || [];
                         items.forEach((item, itemIdx) => {
-                            // 7. 檢查 item.mapUrl 是否存在，若有則加上 linked class
                             content.innerHTML += `
                                 <div class="itinerary-item ${isPanelEditMode ? 'edit-mode-active' : ''} ${isDeleteMode ? 'delete-mode-active' : ''}" data-idx="${itemIdx}">
                                     <div class="item-drag-handle">⠿</div>
@@ -261,12 +256,13 @@
             });
         }
 
-        // 9. 手機版拖曳修復：調整 delay, touchStartThreshold 並配合 CSS touch-action: none
+        // 2. 修正手機拖曳：確保只有一個 Sortable 實例
         function initSortableItems() {
-            Sortable.create(document.getElementById('itineraryContent'), {
+            if (sortableInstance) sortableInstance.destroy(); // 關鍵：刪除舊實例，避免多重綁定導致手機拖曳失效
+            sortableInstance = Sortable.create(document.getElementById('itineraryContent'), {
                 handle: '.item-drag-handle',
                 animation: 200,
-                delay: 0, // 因為 CSS 已經禁止了把手的滾動，這裡可以設為 0 讓反應更即時
+                delay: 50, // 給手機一點反應時間
                 touchStartThreshold: 5,
                 onEnd: () => {
                     const newItems = [];
@@ -287,7 +283,6 @@
         }
 
         function saveMapInfo() { 
-            // 7. 儲存後資料庫更新，loadItinerary 會自動重繪並套用 .linked class (藍燈)
             db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${currentEditingItemIdx}`).update({ mapUrl: document.getElementById('mapUrlInput').value }); 
             closeModal('mapsModal'); 
         }
@@ -334,7 +329,6 @@
                 title: "我的新旅程", date: "2026.02.06", desc: "冒險開始", order: Date.now(), rating: 0,
                 days: [{ items: [{ time: "09:00", place: "首站", note: "細節..." }] }]
             }).then(() => {
-                // 5. 加速反應時間，100ms 後移動
                 setTimeout(() => {
                     const el = document.getElementById('card-' + newId);
                     if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
