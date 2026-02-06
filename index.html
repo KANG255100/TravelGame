@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.12</title>
+    <title>我的旅遊雲端手帳 v1.4.13</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -66,17 +66,27 @@
         /* 時間框美化：放大並對齊按鈕 */
         .itinerary-item input[type="time"] {
             border: 1px solid #ddd;
-            padding: 6px 8px;
+            padding: 0 10px; /* 減少上下 padding，靠 height 控制 */
             border-radius: 8px;
             font-size: 1rem;
             color: #333;
             background-color: #f9f9f9;
-            height: 40px;
-            width: auto;           /* 改為 auto，讓它根據內容自動撐開 */
-            min-width: 130px;      /* 確保在不同手機上分鐘都能顯示完整 */
+            height: 40px;    /* 與 .btn-maps 高度一致 */
+            line-height: 40px;
+            width: auto;
+            min-width: 130px;
             cursor: pointer;
-            box-sizing: border-box;
-        }    
+            box-sizing: border-box; /* 確保高度包含邊框 */
+            vertical-align: middle;
+        }
+        
+        .btn-maps {
+            height: 40px;    /* 確保按鈕也是 40px */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+        }
 
         /* 4. 確保拖曳手把在編輯模式出現 */
         .edit-mode-active .item-drag-handle {
@@ -140,6 +150,21 @@
             gap: 8px;
         }
 
+        /* 修正記帳對話框中的日期框寬度 */
+        #expDate {
+            width: 95% !important; /* 往內縮一點 */
+            margin: 10px auto !important; /* 置中 */
+            display: block;
+            box-sizing: border-box;
+        }
+        
+        /* 同時確保其他輸入框也整齊 */
+        #expAmount, #expNote, #expCategory, #expCurrency, #expRate {
+            width: 95% !important;
+            margin: 10px auto !important;
+            box-sizing: border-box;
+        }
+        
         /* 針對日期選擇器特別加強 */
         #expDate {
             min-height: 40px;
@@ -468,7 +493,10 @@
                                     <span style="font-size: 0.8rem; color: #666; font-weight: normal; margin-right: 4px;">${e.currency}</span>${Math.round(e.amount).toLocaleString()}
                                 </div>
                                 <div style="color: var(--primary-color); font-weight: bold; font-size: 0.85rem; margin-top: 2px;">NT$ ${Math.round(twd).toLocaleString()}</div>
-                                ${e.currency !== 'TWD' ? `<div style="font-size: 0.65rem; color: #bbb; margin-top: 2px;">(匯率 ${usedRate})</div>` : ''}
+                                ${e.currency !== 'TWD' ? `
+                                    <div style="font-size: 0.8rem; color: #000; margin-top: 4px; font-weight: 500;">
+                                        (匯率 ${usedRate})
+                                    </div>` : ''}
                             </div>
                 
                             <div style="display: flex; flex-direction: column; justify-content: space-around; padding-left: 10px; border-left: 1px solid #f0f0f0; flex-shrink: 0;">
@@ -628,6 +656,7 @@
     </script>
 </body>
 </html>
+
 
 
 
