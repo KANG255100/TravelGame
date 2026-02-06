@@ -235,15 +235,67 @@
             document.getElementById('body').style.overflow = 'auto'; 
             if(currentTripId) db.ref(`trips/${currentTripId}/days`).off(); // 關閉面板時也確保移除監聽
         }
-        function togglePanelEdit() { isPanelEditMode = !isPanelEditMode; isDeleteMode=false; updateUIState(); loadItinerary(); }
-        function toggleDeleteMode() { isDeleteMode = !isDeleteMode; isPanelEditMode=false; updateUIState(); loadItinerary(); }
 
-        function updateUIState() {
-            document.getElementById('editToggle').classList.toggle('active', isPanelEditMode);
-            document.getElementById('editToggle').innerText = isPanelEditMode ? "🔒 儲存" : "🔓 編輯";
-            document.getElementById('deleteToggle').classList.toggle('active', isDeleteMode);
-            document.getElementById('panelFooter').style.display = isDeleteMode ? 'block' : 'none';
+        // --- v1.4.2 狀態統一管理系統 (核心替換) ---
+        let currentMode = 'view'; // 模式標記: view, edit, delete, report
+        let isReportMode = false; // 明細標記
+
+        function switchMode(target) {
+            // 1. 互斥邏輯：點擊已開啟的模式就關閉它，點擊新的就切換過去
+            if (currentMode === target) {
+                currentMode = 'view';
+            } else {
+                currentMode = target;
+            }
+
+            // 2. 同步底層變數 (確保原本的 loadItinerary 判斷不會壞)
+            isPanelEditMode = (currentMode === 'edit');
+            isDeleteMode = (currentMode === 'delete');
+            isReportMode = (currentMode === 'report');
+
+            // 3. 更新 UI 全域狀態
+            updateAllUIStates();
+
+            // 4. 畫面渲染控制
+            const tabsContainer = document.querySelector('.side-panel > div:nth-child(2)');
+            if (isReportMode) {
+                tabsContainer.style.display = 'none'; // 明細模式隱藏天數列
+                loadFinanceReport();
+            } else {
+                tabsContainer.style.display = 'flex'; // 回復天數列
+                loadItinerary();
+            }
         }
+
+        function updateAllUIStates() {
+            // A. 處理燈號亮滅
+            document.getElementById('editToggle').classList.toggle('active', isPanelEditMode);
+            document.getElementById('deleteToggle').classList.toggle('active', isDeleteMode);
+            document.getElementById('reportToggle').classList.toggle('active', isReportMode);
+
+            // B. 同步按鈕文字
+            document.getElementById('editToggle').innerText = isPanelEditMode ? "🔒 儲存" : "🔓 編輯";
+            document.getElementById('panelFooter').style.display = isDeleteMode ? 'block' : 'none';
+
+            // C. 解決問題 3：編輯或刪除時，禁止記帳與明細
+            const isLocked = isPanelEditMode || isDeleteMode;
+            const financeBtn = document.getElementById('financeBtn');
+            const reportBtn = document.getElementById('reportToggle');
+
+            [financeBtn, reportBtn].forEach(btn => {
+                if(btn) {
+                    btn.disabled = isLocked;
+                    btn.style.opacity = isLocked ? "0.4" : "1";
+                    btn.style.pointerEvents = isLocked ? "none" : "auto";
+                }
+            });
+        }
+
+        // 映射 HTML onclick 事件
+        function togglePanelEdit() { switchMode('edit'); }
+        function toggleDeleteMode() { switchMode('delete'); }
+        function toggleReportMode() { switchMode('report'); }
+        function updateUIState() { updateAllUIStates(); } // 保持對舊代碼的相容性
 
         function loadItinerary() {
             const path = `trips/${currentTripId}/days`;
@@ -450,3 +502,4 @@
     </script>
 </body>
 </html>
+
