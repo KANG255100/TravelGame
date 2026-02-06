@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.7</title>
+    <title>我的旅遊雲端手帳 v1.4.8</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -320,17 +320,23 @@
 
         // 修改後的開啟函數：每次開啟都先填入當天日期
         function openFinanceModal() { 
-            resetFinanceForm(); // 確保每次點開都是乾淨的 (問題 3 & 4)
-            document.getElementById('expDate').valueAsDate = new Date(); // 預設今天
+            resetFinanceForm(); 
+            document.getElementById('expDate').valueAsDate = new Date(); 
+    
+            // 關鍵修正：開啟時立刻跑一遍檢查，確保台幣狀態下匯率框是鎖死的
+            checkCurrency(); 
+    
             document.getElementById('financeModal').style.display = 'flex'; 
         }
 
-        // 核心：清空表單函數 (解決問題 2, 3, 4)
+        // 修正：重置時連匯率框也要清空，不留上一筆的數字
         function resetFinanceForm() {
+            editingFinanceId = null; // 確保重置編輯狀態
             document.getElementById('expAmount').value = '';
             document.getElementById('expNote').value = '';
             document.getElementById('expCurrency').value = 'TWD';
-            document.getElementById('expCategory').selectedIndex = 0; // 回到第一個「住宿」 (問題 2)
+            document.getElementById('expRate').value = '1'; // 重置為 1
+            document.getElementById('expCategory').selectedIndex = 0;
         }
 
         // 取消動作 (問題 3)
@@ -377,19 +383,24 @@
                     totalTWD += twd;
 
                     content.innerHTML += `
-                        <div class="finance-item" style="position:relative; padding-right: 45px;">
-                            <div>
+                        <div class="finance-item" style="position:relative; padding-right: 45px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 12px 0;">
+                            <div style="flex: 1;">
                                 <small style="color:#999; display:block;">${e.date || '無日期'}</small>
-                                <span class="cat-tag" style="background:var(--primary-color)">${e.category}</span> ${e.note}
-                                ${e.currency !== 'TWD' ? `<small style="color:#aaa; display:block;">匯率: ${usedRate}</small>` : ''}
+                                <span class="cat-tag" style="background:var(--primary-color)">${e.category}</span> 
+                                <span style="word-break: break-all;">${e.note}</span>
                             </div>
-                            <div style="text-align:right">
-                                <b>${e.amount} ${e.currency}</b><br>
-                                <small style="color:var(--primary-color);">NT$ ${Math.round(twd)}</small>
+            
+                            <div style="text-align:right; flex-shrink: 0;">
+                                <b style="font-size: 1.1rem;">${e.amount.toLocaleString()} ${e.currency}</b><br>
+                                <div style="line-height: 1.2;">
+                                    <small style="color:var(--primary-color); font-weight:bold;">NT$ ${Math.round(twd).toLocaleString()}</small>
+                                    ${e.currency !== 'TWD' ? `<div style="font-size:0.65rem; color:#bbb;">(@${usedRate})</div>` : ''}
+                                </div>
                             </div>
+
                             <div style="position:absolute; right:0; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px;">
-                                <button onclick="editFinanceItem('${e.id}')" style="border:none; background:none; cursor:pointer; font-size:16px;">✏️</button>
-                                <button onclick="deleteFinanceItem('${e.id}')" style="border:none; background:none; cursor:pointer; font-size:16px;">🗑️</button>
+                                <button onclick="editFinanceItem('${e.id}')" style="border:none; background:none; cursor:pointer; font-size:16px; padding: 4px;">✏️</button>
+                                <button onclick="deleteFinanceItem('${e.id}')" style="border:none; background:none; cursor:pointer; font-size:16px; padding: 4px;">🗑️</button>
                             </div>
                         </div>`;
                 });
@@ -544,6 +555,7 @@
     </script>
 </body>
 </html>
+
 
 
 
