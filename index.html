@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.13</title>
+    <title>我的旅遊雲端手帳 v1.4.14</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -130,45 +130,39 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 4000; backdrop-filter: blur(4px); }
         /* 修正手機版輸入框超出邊界 */
         .modal-content input, 
-        .modal-content select, 
+        .modal-content select,
         #expDate {
             width: 100% !important;
-            max-width: 100%;
-            box-sizing: border-box; /* 確保 padding 不會撐破寬度 */
-            margin: 10px 0 !important; /* 統一上下間距，讓視覺排整齊 */
-            padding: 12px 10px;
+            box-sizing: border-box; /* 確保 padding 不會撐破框框 */
+            height: 48px !important; /* 稍微加高，手機更好點擊 */
+            margin: 10px 0 !important;
+            padding: 10px 12px;
             border: 1px solid #ccc;
             border-radius: 8px;
+            font-size: 16px; /* 防止 iOS 點擊時自動縮放畫面 */
             display: block;
-            font-size: 16px;
-            height: 45px; /* 統一高度 */
         }
         
         /* 讓幣別與匯率那一列的間距也保持一致 */
-        .modal-content div[style*="display:flex"] {
-            margin: 5px 0;
-            gap: 8px;
+        .modal-content div[style*="display: flex"] {
+            width: 100%;
+            gap: 10px;
+            margin: 0 !important; /* 移除外距由內元件控制 */
         }
 
-        /* 修正記帳對話框中的日期框寬度 */
-        #expDate {
-            width: 95% !important; /* 往內縮一點 */
-            margin: 10px auto !important; /* 置中 */
-            display: block;
-            box-sizing: border-box;
+        /* 3. 幣別與匯率格子的寬度要平分，且高度要跟別人一樣 */
+        #expCurrency, #expRate {
+            flex: 1; /* 平分寬度 */
+            margin-top: 5px !important;
         }
         
-        /* 同時確保其他輸入框也整齊 */
-        #expAmount, #expNote, #expCategory, #expCurrency, #expRate {
-            width: 95% !important;
-            margin: 10px auto !important;
-            box-sizing: border-box;
+        /* 4. 最後的「決定」按鈕也要對齊 */
+        .modal-content button[onclick="saveFinance()"] {
+            width: 100% !important;
+            height: 48px;
+            margin-top: 10px;
         }
         
-        /* 針對日期選擇器特別加強 */
-        #expDate {
-            min-height: 40px;
-        }
     </style>
 </head>
 <body id="body">
@@ -656,6 +650,7 @@
     </script>
 </body>
 </html>
+
 
 
 
