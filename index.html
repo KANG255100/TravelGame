@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.11</title>
+    <title>我的旅遊雲端手帳 v1.4.12</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -119,16 +119,25 @@
         .report-summary { background: #f0f7f6; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; border: 1px solid var(--primary-color); }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 4000; backdrop-filter: blur(4px); }
         /* 修正手機版輸入框超出邊界 */
-        .modal-content input, .modal-content select {
-            width: 100%; !important; /* 強制覆蓋 */
-            max-width: 100%;       /* 確保不超出 */
-            padding: 12px 8px;
-            margin: 8px 0;
+        .modal-content input, 
+        .modal-content select, 
+        #expDate {
+            width: 100% !important;
+            max-width: 100%;
+            box-sizing: border-box; /* 確保 padding 不會撐破寬度 */
+            margin: 10px 0 !important; /* 統一上下間距，讓視覺排整齊 */
+            padding: 12px 10px;
             border: 1px solid #ccc;
             border-radius: 8px;
-            box-sizing: border-box; /* 關鍵：寬度計算包含內距 */
             display: block;
-            font-size: 16px; /* 防止 iOS 自動放大 */
+            font-size: 16px;
+            height: 45px; /* 統一高度 */
+        }
+        
+        /* 讓幣別與匯率那一列的間距也保持一致 */
+        .modal-content div[style*="display:flex"] {
+            margin: 5px 0;
+            gap: 8px;
         }
 
         /* 針對日期選擇器特別加強 */
@@ -443,7 +452,7 @@
                     const usedRate = e.exchangeRate || 1;
                     const twd = e.amount * usedRate;
                     totalTWD += twd;
-
+                
                     content.innerHTML += `
                         <div class="finance-item" style="display: flex; align-items: stretch; border-bottom: 1px solid #eee; padding: 15px 5px; gap: 10px;">
                             <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
@@ -453,14 +462,15 @@
                                     <span style="font-size: 0.95rem; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;">${e.note}</span>
                                 </div>
                             </div>
-            
-                            <div style="width: 100px; text-align: right; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0;">
-                                <div style="font-weight: 900; font-size: 1rem; color: #000;">${Math.round(e.amount).toLocaleString()}</div>
-                                <div style="font-size: 0.75rem; color: #666; margin-top: -2px;">${e.currency}</div>
+                            
+                            <div style="width: 135px; text-align: right; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0;">
+                                <div style="font-weight: 900; font-size: 1rem; color: #000;">
+                                    <span style="font-size: 0.8rem; color: #666; font-weight: normal; margin-right: 4px;">${e.currency}</span>${Math.round(e.amount).toLocaleString()}
+                                </div>
                                 <div style="color: var(--primary-color); font-weight: bold; font-size: 0.85rem; margin-top: 2px;">NT$ ${Math.round(twd).toLocaleString()}</div>
-                                ${e.currency !== 'TWD' ? `<div style="font-size: 0.65rem; color: #bbb;">(@${usedRate})</div>` : ''}
+                                ${e.currency !== 'TWD' ? `<div style="font-size: 0.65rem; color: #bbb; margin-top: 2px;">(匯率 ${usedRate})</div>` : ''}
                             </div>
-
+                
                             <div style="display: flex; flex-direction: column; justify-content: space-around; padding-left: 10px; border-left: 1px solid #f0f0f0; flex-shrink: 0;">
                                 <div onclick="editFinanceItem('${e.id}')" style="cursor:pointer; font-size: 1.2rem; padding: 5px; text-align: center;">✏️</div>
                                 <div onclick="deleteFinanceItem('${e.id}')" style="cursor:pointer; font-size: 1.2rem; padding: 5px; text-align: center;">🗑️</div>
@@ -618,6 +628,7 @@
     </script>
 </body>
 </html>
+
 
 
 
