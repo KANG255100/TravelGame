@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.19</title>
+    <title>我的旅遊雲端手帳 v1.4.20</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -136,7 +136,7 @@
             width: 100% !important;   /* 強制所有格子填滿寬度 */
             height: 45px !important;  /* 強制所有格子高度固定為 45 像素 */
             box-sizing: border-box !important; /* 強制寬度包含邊框與內距，解決溢出問題 */
-            margin: 5px 0 !important; /* 統一上下間距 */
+            margin: 10px 0 !important; /* 統一上下間距 */
             padding: 10px 12px !important;
             border: 1px solid #ccc !important;
             border-radius: 8px !important;
@@ -150,7 +150,13 @@
         .modal-content div[style*="display: flex"] {
             width: 100% !important;
             gap: 10px;
-            margin: 0 !important; /* 移除外層容器的間距 */
+            margin: 5px 0 !important; /* 移除外層容器的間距 */
+            padding: 0 !important;         /* 消除內距，防止撐開 */
+        }
+
+        /* 確保匯率列內部的格子不要再重複計算 margin */
+        #expCurrency, #expRate {
+            margin: 0 !important;          /* 內部格子不設邊距，由外層 Flex 容器統一控制 */
         }
         
         /* 確保匯率輸入框在電腦版也是白色 */
@@ -663,6 +669,7 @@
     </script>
 </body>
 </html>
+
 
 
 
