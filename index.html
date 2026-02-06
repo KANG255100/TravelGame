@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.16</title>
+    <title>我的旅遊雲端手帳 v1.4.17</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -128,26 +128,40 @@
         .cat-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; color: white; margin-right: 5px; font-weight: bold; }
         .report-summary { background: #f0f7f6; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; border: 1px solid var(--primary-color); }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 4000; backdrop-filter: blur(4px); }
-        /* 統一對話框內所有輸入元件的皮膚 */
-        #financeModal .modal-content input, 
-        #financeModal .modal-content select {
-            display: block;
-            width: 100%; /* 預設先給 100% */
-            height: 45px;
-            padding: 10px 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-            margin-bottom: 12px;
+        /* 記帳對話框：所有格子基礎統一樣式 */
+        .modal-content input, 
+        .modal-content select {
+            width: 100% !important;   /* 強制所有格子填滿寬度 */
+            height: 45px !important;  /* 強制所有格子高度固定為 45 像素 */
+            box-sizing: border-box !important; /* 強制寬度包含邊框與內距，解決溢出問題 */
+            margin: 10px 0 !important; /* 統一上下間距 */
+            padding: 10px 12px !important;
+            border: 1px solid #ccc !important;
+            border-radius: 8px !important;
+            font-size: 16px !important;
+            display: block !important;
+            appearance: none;         /* 移除瀏覽器對輸入框的預設外觀 */
+            -webkit-appearance: none; /* 針對 Safari/Chrome 移除預設外觀 */
         }
-
-/* 唯獨支出日期要縮小並置中 */
-#expDate {
-    width: 95% !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-}
+        
+        /* 針對「支出日期」單獨修正：解決右邊多出來或電腦版縮短的問題 */
+        #expDate {
+            width: 100% !important;   /* 確保跟金額、備註一樣寬 */
+            max-width: 100% !important; /* 防止它因為預設樣式而變長或變短 */
+            min-height: 45px !important; /* 再次確保高度與他人一致 */
+            flex: none !important;    /* 防止在 flex 佈局中被擠壓 */
+        }
+        
+        /* 確保「幣別與匯率」那一行不會因為 width: 100% 而壞掉 */
+        .modal-content div[style*="display: flex"] {
+            width: 100% !important;
+            gap: 10px;
+        }
+        .modal-content div[style*="display: flex"] input,
+        .modal-content div[style*="display: flex"] select {
+            flex: 1; /* 讓這兩格平分寬度，且依然保有 45px 的高度 */
+            width: 50% !important; /* 覆蓋掉上面的 100%，讓它們並排 */
+        }
         
     </style>
 </head>
@@ -636,6 +650,7 @@
     </script>
 </body>
 </html>
+
 
 
 
