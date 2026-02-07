@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.10</title>
+    <title>我的旅遊雲端手帳 v1.5.11</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -237,8 +237,8 @@
             margin-bottom: 8px;
         }
 
-        /* 關鍵：當標題進入編輯模式時，顯示日期群組 */
-        .trip-title.editing-mode + .date-range-group {
+        /* 關鍵：只要卡片內部有任何東西正在被編輯(editing-mode)，就顯示日期框 */
+        .trip-card:has(.editing-mode) .date-range-group {
             display: flex !important;
         }
 
@@ -714,8 +714,13 @@
         function updateItemField(idx, f, v) { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${idx}`).update({ [f]: v }); }
         function initSortableItems() { if (sortableInstance) sortableInstance.destroy(); sortableInstance = Sortable.create(document.getElementById('itineraryContent'), { handle: '.item-drag-handle', animation: 200, onEnd: () => { const newItems = []; document.querySelectorAll('.itinerary-item').forEach(el => { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${el.dataset.idx}`).once('value', s => { newItems.push(s.val()); if(newItems.length === document.querySelectorAll('.itinerary-item').length) db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(newItems); }); }); } }); }
         function toggleEdit(btn, id) {
-            const titleEl = document.getElementById('card-' + id).querySelector('.trip-title');
-            enterEditMode(titleEl);
+            // 直接用 ID 抓卡片裡面的標題，這樣不管 HTML 怎麼塞東西都找得到
+            const card = document.getElementById('card-' + id);
+            const titleEl = card.querySelector('.trip-title');
+            
+            if (titleEl) {
+                enterEditMode(titleEl);
+            }
         }
         function openImgModal(id) { currentTripId = id; document.getElementById('imgModal').style.display='flex'; }
         function applyImageChange() { const file = document.getElementById('imgFileInput').files[0]; const url = document.getElementById('imgUrlInput').value; if (file) { const reader = new FileReader(); reader.onload = (e) => { db.ref('trips/'+currentTripId).update({img: e.target.result}); closeModal('imgModal'); }; reader.readAsDataURL(file); } else if (url) { db.ref('trips/'+currentTripId).update({img: url}); closeModal('imgModal'); } }
@@ -747,6 +752,7 @@
     </script>
 </body>
 </html>
+
 
 
 
