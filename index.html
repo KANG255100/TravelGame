@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.13</title>
+    <title>我的旅遊雲端手帳 v1.5.14</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -726,20 +726,52 @@
             const titleEl = card.querySelector('.trip-title');
             const dateGroup = card.querySelector('.date-range-group');
 
-            // 1. 切換按鈕的「亮燈」狀態 (亮燈時變綠色並顯示儲存)
-            btn.classList.toggle('active-editing');
-            if (btn.classList.contains('active-editing')) {
+            // 判斷目前是否正在編輯中
+            const isEditing = btn.classList.contains('active-editing');
+
+            if (!isEditing) {
+                // --- 進入編輯模式 ---
+                btn.classList.add('active-editing');
                 btn.innerText = '儲存標題';
                 btn.style.backgroundColor = '#2ecc71'; // 亮綠燈
                 dateGroup.style.display = 'flex';
-                // 這裡我們直接實作編輯模式，不呼叫 enterEditMode
-                makeEditable(titleEl);
+                
+                // 記下原本的文字並變換成輸入框
+                const currentText = titleEl.innerText;
+                titleEl.innerHTML = `<input type="text" class="edit-input" value="${currentText}" style="width:100%; padding:5px; border:2px dashed #2ecc71; box-sizing:border-box;">`;
+                titleEl.querySelector('input').focus();
             } else {
-                // 觸發儲存並關燈
+                // --- 執行儲存並關閉模式 ---
                 const input = titleEl.querySelector('input');
-                if (input) {
-                    saveAllData(id, input.value, card);
+                const newTitle = input ? input.value.trim() : titleEl.innerText;
+                
+                // 1. 抓取日期
+                const startInp = card.querySelector('.start-date');
+                const endInp = card.querySelector('.end-date');
+                const startD = startInp.value.replace(/-/g, '.');
+                const endD = endInp.value.replace(/-/g, '.');
+
+                let finalDate = "";
+                if (startD && endD) {
+                    finalDate = `${startD} ~ ${endD}`;
+                } else if (startD) {
+                    finalDate = startD;
                 }
+
+                // 2. 先更新 UI (防止視覺上標題消失)
+                titleEl.innerHTML = newTitle; 
+                
+                // 3. 更新 Firebase
+                db.ref('trips/' + id).update({
+                    title: newTitle,
+                    date: finalDate
+                }).then(() => {
+                    // 4. 徹底重置按鈕與日期框狀態
+                    btn.classList.remove('active-editing');
+                    btn.innerText = '編輯標題';
+                    btn.style.backgroundColor = ''; 
+                    dateGroup.style.display = 'none';
+                });
             }
         }
         // 輔助函數：讓文字變輸入框
@@ -808,6 +840,7 @@
     </script>
 </body>
 </html>
+
 
 
 
