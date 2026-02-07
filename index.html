@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.20</title>
+    <title>我的旅遊雲端手帳 v1.4.21</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -182,6 +182,31 @@
             flex: 1; /* 讓這兩格平分寬度，且依然保有 45px 的高度 */
             width: 50% !important; /* 覆蓋掉上面的 100%，讓它們並排 */
         }
+
+        .trip-date-display {
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .editable-date {
+            display: none; /* 平時隱藏，編輯模式才出現 */
+            border: 1px dashed #aaa;
+            background: #fffcf0;
+            padding: 5px;
+            border-radius: 4px;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        .editing-mode .editable-date {
+            display: block; /* 編輯模式下顯示選擇器 */
+        }
+        
+        .editing-mode .trip-date-display {
+            display: none; /* 編輯模式下隱藏文字 */
+        }
         
     </style>
 </head>
@@ -321,7 +346,8 @@
                         <button class="btn-action" style="color:var(--danger-color);" onclick="askDeleteTrip('${id}')">刪除行程</button>
                     </div>
                     <div class="trip-info">
-                        <div class="trip-date editable" data-field="date">${item.date}</div>
+                        <input type="date" class="trip-date editable-date" data-field="date" value="${item.date.replace(/\./g, '-')}" disabled>
+                        <div class="trip-date-display" id="display-date-${id}">${formatTripDateRange(item.date, item.days)}</div>
                         <div class="trip-title editable" data-field="title">${item.title}</div>
                         <div class="trip-desc editable" data-field="desc">${item.desc || '冒險描述...'}</div>
                         <div class="star-rating" onclick="handleRating(event, '${id}')">${generateStars(item.rating || 0)}</div>
@@ -638,6 +664,11 @@
             const card = btn.closest('.trip-card'); const editables = card.querySelectorAll('.editable');
             if (btn.innerText === "編輯標題") { editables.forEach(el => { el.contentEditable = true; el.classList.add('editing-mode'); }); btn.innerText = "儲存標題"; btn.style.background = "#2ecc71"; btn.style.color = "white"; } 
             else { const up = {}; editables.forEach(el => { up[el.dataset.field] = el.innerText; el.contentEditable = false; el.classList.remove('editing-mode'); }); db.ref('trips/'+id).update(up); btn.innerText = "編輯標題"; btn.style.background = "#eee"; btn.style.color = "#333"; }
+            // 在 toggleEdit 的 else 區塊中加入
+            const dateInput = card.querySelector('.editable-date');
+            if (dateInput) {
+                up.date = dateInput.value.replace(/-/g, '.'); // 將 2026-02-05 轉回 2026.02.05 儲存
+            }
         }
         function openImgModal(id) { currentTripId = id; document.getElementById('imgModal').style.display='flex'; }
         function applyImageChange() { const file = document.getElementById('imgFileInput').files[0]; const url = document.getElementById('imgUrlInput').value; if (file) { const reader = new FileReader(); reader.onload = (e) => { db.ref('trips/'+currentTripId).update({img: e.target.result}); closeModal('imgModal'); }; reader.readAsDataURL(file); } else if (url) { db.ref('trips/'+currentTripId).update({img: url}); closeModal('imgModal'); } }
@@ -666,9 +697,30 @@
             });
         }
         new Sortable(document.getElementById('tripGrid'), { animation: 200, handle: '.drag-handle', onEnd: () => { document.querySelectorAll('.trip-card').forEach((c, i) => db.ref('trips/' + c.dataset.id).update({ order: i })); } });
+    
+        function formatTripDateRange(startDateStr, days) {
+            if (!startDateStr || !days) return startDateStr;
+            
+            // 將 2026.02.05 轉換成電腦讀得懂的格式
+            const start = new Date(startDateStr.replace(/\./g, '-'));
+            if (isNaN(start)) return startDateStr;
+        
+            const dayCount = days.length;
+            const end = new Date(start);
+            end.setDate(start.getDate() + (dayCount > 0 ? dayCount - 1 : 0));
+        
+            const weekNames = ['日', '一', '二', '三', '四', '五', '六'];
+            
+            const format = (d) => `${d.getMonth() + 1}/${d.getDate()} (${weekNames[d.getDay()]})`;
+        
+            // 如果只有一天，顯示單日；多天則顯示範圍
+            return dayCount <= 1 ? format(start) : `${format(start)} ~ ${format(end)}`;
+        }
+    
     </script>
 </body>
 </html>
+
 
 
 
