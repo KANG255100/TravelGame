@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.11</title>
+    <title>我的旅遊雲端手帳 v1.5.12</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -371,7 +371,7 @@
         }
 
         function renderCard(id, item) {
-            // 拆分舊日期
+            // 解析日期
             let s = "", e = "";
             if (item.date && item.date.includes('~')) {
                 const p = item.date.split('~');
@@ -394,10 +394,10 @@
                     <div class="trip-info">
                         <div class="trip-date" style="display:none">${item.date}</div>
                         
-                        <div class="date-range-group">
-                            <input type="date" class="date-edit-input start-date" value="${s}">
+                        <div class="date-range-group" style="display:none; flex-direction:row; gap:5px; align-items:center; margin-bottom:5px;">
+                            <input type="date" class="date-edit-input start-date" value="${s}" style="flex:1; padding:5px; border:1px solid #ccc; border-radius:5px; font-size:13px;">
                             <span>~</span>
-                            <input type="date" class="date-edit-input end-date" value="${e}">
+                            <input type="date" class="date-edit-input end-date" value="${e}" style="flex:1; padding:5px; border:1px solid #ccc; border-radius:5px; font-size:13px;">
                         </div>
 
                         <div class="trip-title editable" data-field="title">${item.title}</div>
@@ -714,10 +714,18 @@
         function updateItemField(idx, f, v) { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${idx}`).update({ [f]: v }); }
         function initSortableItems() { if (sortableInstance) sortableInstance.destroy(); sortableInstance = Sortable.create(document.getElementById('itineraryContent'), { handle: '.item-drag-handle', animation: 200, onEnd: () => { const newItems = []; document.querySelectorAll('.itinerary-item').forEach(el => { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${el.dataset.idx}`).once('value', s => { newItems.push(s.val()); if(newItems.length === document.querySelectorAll('.itinerary-item').length) db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(newItems); }); }); } }); }
         function toggleEdit(btn, id) {
-            // 直接用 ID 抓卡片裡面的標題，這樣不管 HTML 怎麼塞東西都找得到
             const card = document.getElementById('card-' + id);
             const titleEl = card.querySelector('.trip-title');
-            
+            const dateGroup = card.querySelector('.date-range-group');
+
+            // 1. 先顯示/隱藏日期選取器
+            if (dateGroup.style.display === 'none' || dateGroup.style.display === '') {
+                dateGroup.style.display = 'flex';
+            } else {
+                dateGroup.style.display = 'none';
+            }
+
+            // 2. 觸發原始 v1.4.20 的編輯模式
             if (titleEl) {
                 enterEditMode(titleEl);
             }
@@ -752,6 +760,7 @@
     </script>
 </body>
 </html>
+
 
 
 
