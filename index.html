@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.9</title>
+    <title>我的旅遊雲端手帳 v1.5.10</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -371,12 +371,12 @@
         }
 
         function renderCard(id, item) {
-            // 處理日期拆分
-            let startVal = "", endVal = "";
+            // 拆分舊日期
+            let s = "", e = "";
             if (item.date && item.date.includes('~')) {
-                const parts = item.date.split('~');
-                startVal = parts[0].trim().replace(/\./g, '-').substring(0, 10);
-                endVal = parts[1].trim().replace(/\./g, '-').substring(0, 10);
+                const p = item.date.split('~');
+                s = p[0].trim().replace(/\./g, '-').substring(0, 10);
+                e = p[1].trim().replace(/\./g, '-').substring(0, 10);
             }
 
             const html = `
@@ -395,36 +395,9 @@
                         <div class="trip-date" style="display:none">${item.date}</div>
                         
                         <div class="date-range-group">
-                            <input type="date" class="date-edit-input start-date" value="${startVal}">
+                            <input type="date" class="date-edit-input start-date" value="${s}">
                             <span>~</span>
-                            <input type="date" class="date-edit-input end-date" value="${endVal}">
-                        </div>
-
-                        <div class="trip-title editable" data-field="title">${item.title}</div>
-                        <div class="trip-desc editable" data-field="desc">${item.desc || '冒險描述...'}</div>
-                        <div class="star-rating" onclick="handleRating(event, '${id}')">${generateStars(item.rating || 0)}</div>
-                    </div>
-                </article>`;
-            document.getElementById('tripGrid').insertAdjacentHTML('beforeend', html);
-        }
-
-            const html = `
-                <article class="trip-card" data-id="${id}" id="card-${id}">
-                    <div class="drag-handle" style="position:absolute; top:12px; left:12px; width:36px; height:36px; background:rgba(255,255,255,0.9); border:2px solid #333; border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:100; cursor:grab;">🖐️</div>
-                    <div class="img-container">
-                        <div class="img-edit-gear" onclick="openImgModal('${id}')">⚙️</div>
-                        <img src="${item.img}" class="trip-img">
-                    </div>
-                    <div class="card-tools">
-                        <button class="btn-action" onclick="openSidePanel('${id}', '${item.title}')">查看行程</button>
-                        <button class="btn-action" onclick="toggleEdit(this, '${id}')">編輯標題</button>
-                        <button class="btn-action" style="color:var(--danger-color);" onclick="askDeleteTrip('${id}')">刪除行程</button>
-                    </div>
-                    <div class="trip-info">
-                        <div class="date-range-group">
-                            <input type="date" class="date-edit-input start-date" value="${startVal}">
-                            <span style="font-size:12px">~</span>
-                            <input type="date" class="date-edit-input end-date" value="${endVal}">
+                            <input type="date" class="date-edit-input end-date" value="${e}">
                         </div>
 
                         <div class="trip-title editable" data-field="title">${item.title}</div>
@@ -774,6 +747,7 @@
     </script>
 </body>
 </html>
+
 
 
 
