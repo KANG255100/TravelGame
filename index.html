@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.15</title>
+    <title>我的旅遊雲端手帳 v1.5.16</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -240,8 +240,13 @@
             font-size: 13px;
         }
 
-        /* 強制隱藏原本主介面上顯示日期的那一行文字 */
-        .trip-date { display: none !important; }
+        .trip-date {
+            display: block !important;
+            font-size: 14px;
+            color: #555;
+            margin: 5px 0;
+            font-weight: bold;
+        }
 
         /* 日期群組：放在標題上方 */
         .date-range-group {
@@ -263,10 +268,8 @@
 
         /* 編輯按鈕亮燈效果 */
         .btn-action.active-editing {
-            background-color: #264653 !important;
+            background-color: #2ecc71 !important; /* 正宗亮綠色 */
             color: white !important;
-            box-shadow: 0 0 10px rgba(42, 157, 143, 0.5);
-            transform: scale(0.95);
         }
         
     </style>
@@ -739,7 +742,7 @@
         function toggleEdit(btn, id) {
             const card = document.getElementById('card-' + id);
             const titleEl = card.querySelector('.trip-title');
-            const dateDisplay = card.querySelector('.trip-date'); // 原本顯示日期的地方
+            const dateDisplay = card.querySelector('.trip-date');
             const dateGroup = card.querySelector('.date-range-group');
 
             const isEditing = btn.classList.contains('active-editing');
@@ -748,26 +751,23 @@
                 // --- 進入編輯模式 ---
                 btn.classList.add('active-editing');
                 btn.innerText = '儲存標題';
-                // 回歸原始亮綠色
-                btn.style.backgroundColor = '#2ecc71'; 
-                btn.style.color = '#fff';
                 
+                // 顯示日期選取器，隱藏原本的純文字日期
                 dateGroup.style.display = 'flex';
-                // 進入編輯時，暫時隱藏原本的純文字日期，避免畫面太擠
                 if (dateDisplay) dateDisplay.style.display = 'none';
                 
-                const currentText = titleEl.innerText;
-                titleEl.innerHTML = `<input type="text" class="edit-input" value="${currentText}" style="width:100%; padding:5px; border:2px dashed #2ecc71; box-sizing:border-box;">`;
+                // 【核心修正】：要把原本的標題文字塞進 input，不然會變空白
+                const currentTitle = titleEl.innerText;
+                titleEl.innerHTML = `<input type="text" class="edit-input" value="${currentTitle}" style="width:100%; padding:5px; border:2px solid #2ecc71; border-radius:5px;">`;
                 titleEl.querySelector('input').focus();
             } else {
                 // --- 執行儲存 ---
                 const input = titleEl.querySelector('input');
-                const newTitle = input ? input.value.trim() : titleEl.innerText;
+                const newTitle = input ? input.value.trim() : "";
                 
                 const startInp = card.querySelector('.start-date');
                 const endInp = card.querySelector('.end-date');
                 
-                // 抓取選取的日期
                 const startD = startInp.value.replace(/-/g, '.');
                 const endD = endInp.value.replace(/-/g, '.');
 
@@ -778,22 +778,26 @@
                     finalDate = startD;
                 }
 
-                // 1. 同步更新 UI：讓畫面上立刻看到新標題和新日期
+                if (newTitle === "") {
+                    alert("標題不能空著喔！");
+                    return;
+                }
+
+                // 立即更新 UI，防止閃爍消失
                 titleEl.innerHTML = newTitle;
                 if (dateDisplay) {
                     dateDisplay.innerText = finalDate;
-                    dateDisplay.style.display = 'block'; // 儲存後恢復顯示日期
+                    dateDisplay.style.display = 'block';
                 }
-                
-                // 2. 更新 Firebase
+
+                // 存入 Firebase
                 db.ref('trips/' + id).update({
                     title: newTitle,
                     date: finalDate
                 }).then(() => {
-                    // 3. 重置按鈕
+                    // 恢復按鈕狀態
                     btn.classList.remove('active-editing');
                     btn.innerText = '編輯標題';
-                    btn.style.backgroundColor = ''; 
                     dateGroup.style.display = 'none';
                 });
             }
@@ -864,6 +868,7 @@
     </script>
 </body>
 </html>
+
 
 
 
