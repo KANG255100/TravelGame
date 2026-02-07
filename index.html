@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.21</title>
+    <title>我的旅遊雲端手帳 v1.4.22</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -207,6 +207,10 @@
         .editing-mode .trip-date-display {
             display: none; /* 編輯模式下隱藏文字 */
         }
+
+        /* 當卡片處於編輯狀態時，隱藏文字顯示框，顯示日期輸入框 */
+        .trip-card.editing-mode .trip-date-display { display: none; }
+        .trip-card.editing-mode .trip-date-input { display: block !important; }
         
     </style>
 </head>
@@ -233,10 +237,6 @@
                 <button id="deleteToggle" class="panel-ctrl-btn" onclick="toggleDeleteMode()">🗑️ 刪除</button>
                 <button id="reportToggle" class="panel-ctrl-btn" onclick="toggleReportMode()">📊 明細</button>
             </div>
-        </div>
-        <div id="dayTabsContainer" style="position: sticky; top: 0; z-index: 10; background: #f0f0f0; border-bottom: 1px solid #ddd; display: flex; height: 50px; flex-shrink: 0;">
-            <div style="width: 100px; height: 100%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-weight: 800; cursor: pointer; border-right: 1px solid #ccc; flex-shrink: 0;" onclick="addNewDay()">+ 新增天數</div>
-            <div id="dayTabs" style="display: flex; overflow-x: auto; flex-grow: 1; align-items: center; padding: 0 10px; gap: 8px;"></div>
         </div>
         <div class="itinerary-content" id="itineraryContent"></div>
         <div id="panelFooter" style="padding: 15px; background: #fafafa; border-top: 1px solid #eee; text-align: center; display: none;">
@@ -346,7 +346,12 @@
                         <button class="btn-action" style="color:var(--danger-color);" onclick="askDeleteTrip('${id}')">刪除行程</button>
                     </div>
                     <div class="trip-info">
-                        <input type="date" class="trip-date editable-date" data-field="date" value="${item.date.replace(/\./g, '-')}" disabled>
+                        <div class="trip-date-display">${formatTripDateRange(item.date, item.days)}</div>
+                        
+                        <input type="date" class="trip-date-input" 
+                               value="${item.date.replace(/\./g, '-')}" 
+                               style="display:none; width:100%; margin-bottom:10px;"
+                               onchange="updateTripDate('${id}', this.value)">
                         <div class="trip-date-display" id="display-date-${id}">${formatTripDateRange(item.date, item.days)}</div>
                         <div class="trip-title editable" data-field="title">${item.title}</div>
                         <div class="trip-desc editable" data-field="desc">${item.desc || '冒險描述...'}</div>
@@ -406,45 +411,49 @@
         }
 
         function loadItinerary() {
-            const path = `trips/${currentTripId}/days`;
-            db.ref(path).off();
-            db.ref(path).on('value', snapshot => {
-                const tabs = document.getElementById('dayTabs'), content = document.getElementById('itineraryContent');
+            db.ref(`trips/${currentTripId}`).once('value', snapshot => {
+                const tripData = snapshot.val();
+                const days = tripData.days || [];
+                // 關鍵：抓取主卡片的日期並轉為 Date 物件
+                const startDate = new Date(tripData.date.replace(/\./g, '-')); 
+                
+                const tabs = document.getElementById('dayTabs');
+                const content = document.getElementById('itineraryContent');
                 tabs.innerHTML = ''; content.innerHTML = '';
-                const days = snapshot.val() || [];
+        
                 days.forEach((day, index) => {
+                    // 計算當天日期與星期
+                    const currentDay = new Date(startDate);
+                    currentDay.setDate(startDate.getDate() + index);
+                    const weekNames = ['日', '一', '二', '三', '四', '五', '六'];
+                    const dateStr = `${currentDay.getMonth() + 1}/${currentDay.getDate()} (${weekNames[currentDay.getDay()]})`;
+        
+                    // 渲染上方分頁標籤 (Day 1 (2/5))
                     const tab = document.createElement('div');
+                    tab.className = 'day-tab'; // 建議將樣式抽到 CSS
                     tab.style = `padding:5px 15px; background:${index===currentDayIndex?'var(--primary-color)':'white'}; color:${index===currentDayIndex?'white':'black'}; border-radius:20px; cursor:pointer; border:1px solid #ccc; font-weight:bold; white-space:nowrap;`;
-                    tab.innerText = `Day ${index + 1}`;
+                    tab.innerText = `Day ${index + 1} (${currentDay.getMonth() + 1}/${currentDay.getDate()})`;
                     tab.onclick = () => { currentDayIndex = index; loadItinerary(); };
                     tabs.appendChild(tab);
+        
                     if (index === currentDayIndex) {
-                        (day.items || []).forEach((item, itemIdx) => {
-                            content.innerHTML += `
-                                <div class="itinerary-item ${isPanelEditMode?'edit-mode-active':''} ${isDeleteMode?'delete-mode-active':''}" data-idx="${itemIdx}">
-                                    
-                                    <div class="item-drag-handle">⠿</div>
-                                    
-                                    ${isDeleteMode ? `
-                                        <div style="position:absolute; right:10px; top:10px; background:var(--danger-color); color:white; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:100; font-weight:bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" 
-                                             onclick="askDeleteItem(${itemIdx})">✕</div>
-                                    ` : ''}
-                                    
-                                    <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center; flex-wrap: wrap;">
-                                        <input type="time" value="${item.time || '00:00'}" ${!isPanelEditMode?'disabled':''} onchange="updateItemField(${itemIdx}, 'time', this.value)">
-                                        <button class="btn-maps ${item.mapUrl ? 'linked' : ''}" 
-                                                style="height:40px; ${isDeleteMode?'opacity:0.3; pointer-events:none;':''}" 
-                                                onclick="handleMapAction(${itemIdx}, '${item.mapUrl || ''}')">📍 Google地點</button>
-                                    </div>
-                                    
-                                    <div class="item-place-title" contenteditable="${isPanelEditMode}" onblur="updateItemField(${itemIdx}, 'place', this.innerText)">${item.place}</div>
-                                    <div class="item-note-text" contenteditable="${isPanelEditMode}" onblur="updateItemField(${itemIdx}, 'note', this.innerText)">${item.note}</div>
-                                </div>`;
+                        // 渲染內容標題：第 1 天 - 2/5 (四)
+                        let dayHtml = `<h2 style="color:var(--primary-color); margin:10px 0 20px 0;">第 ${index + 1} 天 - ${dateStr}</h2>`;
+                        
+                        // 接下來接原本渲染 items 的程式碼...
+                        (day.items || []).forEach((item, idx) => {
+                            dayHtml += `
+                                <div class="itinerary-item">
+                                    <input type="time" class="time-input" value="${item.time}" onchange="updateItinerary(${index}, ${idx}, 'time', this.value)">
+                                    <input type="text" class="place-input" value="${item.place}" placeholder="地點" onchange="updateItinerary(${index}, ${idx}, 'place', this.value)">
+                                    <button class="btn-maps" onclick="window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('${item.place}'))">📍</button>
+                                    <textarea class="note-input" placeholder="備註..." onchange="updateItinerary(${index}, ${idx}, 'note', this.value)">${item.note}</textarea>
+                                    <button class="btn-delete" onclick="deleteItem(${index}, ${idx})">×</button>
+                                </div>
+                            `;
                         });
-                        if (isPanelEditMode) {
-                            content.innerHTML += `<div onclick="addNewItem()" style="padding:15px; border:2px dashed #ccc; border-radius:12px; text-align:center; color:#888; font-weight:bold; cursor:pointer;">+ 新增項目</div>`;
-                            initSortableItems();
-                        }
+                        dayHtml += `<button class="btn-add" onclick="addItem(${index})">+ 新增項目</button>`;
+                        content.innerHTML = dayHtml;
                     }
                 });
             });
@@ -716,10 +725,18 @@
             // 如果只有一天，顯示單日；多天則顯示範圍
             return dayCount <= 1 ? format(start) : `${format(start)} ~ ${format(end)}`;
         }
-    
+
+        function updateTripDate(id, newDateValue) {
+            // 將 HTML5 的 2026-02-05 轉回你習慣的 2026.02.05 格式儲存
+            const formattedDate = newDateValue.replace(/-/g, '.');
+            db.ref(`trips/${id}`).update({ date: formattedDate })
+              .then(() => console.log("日期已同步更新"));
+        }
+        
     </script>
 </body>
 </html>
+
 
 
 
