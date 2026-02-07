@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.21</title>
+    <title>我的旅遊雲端手帳 v1.5.3</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -208,6 +208,24 @@
             display: none; /* 編輯模式下隱藏文字 */
         }
 
+        /* 新增：日期輸入框預設隱藏，只有編輯模式才顯示 */
+        .date-edit-input {
+            display: none;
+            width: 100%;
+            padding: 8px;
+            margin-top: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            background-color: #fff;
+        }
+
+        /* 當卡片啟動編輯模式時，顯示日期輸入框 */
+        .trip-card.editing-mode-active .date-edit-input {
+            display: block !important;
+        }
+        
     </style>
 </head>
 <body id="body">
@@ -333,27 +351,31 @@
         }
 
         function renderCard(id, item) {
-            const html = `
-                <article class="trip-card" data-id="${id}" id="card-${id}">
-                    <div class="drag-handle" style="position:absolute; top:12px; left:12px; width:36px; height:36px; background:rgba(255,255,255,0.9); border:2px solid #333; border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:100; cursor:grab;">🖐️</div>
-                    <div class="img-container">
-                        <div class="img-edit-gear" onclick="openImgModal('${id}')">⚙️</div>
-                        <img src="${item.img}" class="trip-img">
-                    </div>
-                    <div class="card-tools">
-                        <button class="btn-action" onclick="openSidePanel('${id}', '${item.title}')">查看行程</button>
-                        <button class="btn-action" onclick="toggleEdit(this, '${id}')">編輯標題</button>
-                        <button class="btn-action" style="color:var(--danger-color);" onclick="askDeleteTrip('${id}')">刪除行程</button>
-                    </div>
+            // 將 2026.02.05 轉換成 2026-02-05 格式，HTML5 日期選取器才讀得懂
+            const dateValue = item.date ? item.date.replace(/\./g, '-') : '';
+        
+            return `
+                <div class="trip-card" id="card-${id}" data-id="${id}">
+                    <div class="drag-handle">☰</div>
+                    <img src="${item.img}" onclick="openTrip('${id}')">
                     <div class="trip-info">
-                        <input type="date" class="trip-date editable-date" data-field="date" value="${item.date.replace(/\./g, '-')}" disabled>
-                        <div class="trip-date-display" id="display-date-${id}">${formatTripDateRange(item.date, item.days)}</div>
-                        <div class="trip-title editable" data-field="title">${item.title}</div>
-                        <div class="trip-desc editable" data-field="desc">${item.desc || '冒險描述...'}</div>
-                        <div class="star-rating" onclick="handleRating(event, '${id}')">${generateStars(item.rating || 0)}</div>
+                        <div class="trip-title editable" data-field="title" onclick="openTrip('${id}')">${item.title}</div>
+                        
+                        <div class="edit-input-group">
+                            <input type="text" class="edit-input" value="${item.title}" placeholder="編輯標題">
+                            
+                            <input type="date" class="date-edit-input" value="${dateValue}" id="date-input-${id}">
+                            
+                            <button class="btn-confirm" onclick="saveEdit('${id}')">✓</button>
+                        </div>
+                        
+                        <div class="card-actions">
+                            <button class="btn-action btn-edit" onclick="toggleEdit('${id}')">編輯標題</button>
+                            <button class="btn-action btn-delete" onclick="deleteTrip('${id}')">刪除</button>
+                        </div>
                     </div>
-                </article>`;
-            document.getElementById('tripGrid').insertAdjacentHTML('beforeend', html);
+                </div>
+            `;
         }
 
         function generateStars(r) { let s=''; for(let i=1; i<=5; i++) s+=`<span class="${i<=r?'filled':''}" data-value="${i}">★</span>`; return s; }
@@ -661,15 +683,22 @@
         function updateItemField(idx, f, v) { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${idx}`).update({ [f]: v }); }
         function initSortableItems() { if (sortableInstance) sortableInstance.destroy(); sortableInstance = Sortable.create(document.getElementById('itineraryContent'), { handle: '.item-drag-handle', animation: 200, onEnd: () => { const newItems = []; document.querySelectorAll('.itinerary-item').forEach(el => { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${el.dataset.idx}`).once('value', s => { newItems.push(s.val()); if(newItems.length === document.querySelectorAll('.itinerary-item').length) db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(newItems); }); }); } }); }
         function toggleEdit(btn, id) {
-            const card = btn.closest('.trip-card'); const editables = card.querySelectorAll('.editable');
-            if (btn.innerText === "編輯標題") { editables.forEach(el => { el.contentEditable = true; el.classList.add('editing-mode'); }); btn.innerText = "儲存標題"; btn.style.background = "#2ecc71"; btn.style.color = "white"; } 
-            else { const up = {}; editables.forEach(el => { up[el.dataset.field] = el.innerText; el.contentEditable = false; el.classList.remove('editing-mode'); }); db.ref('trips/'+id).update(up); btn.innerText = "編輯標題"; btn.style.background = "#eee"; btn.style.color = "#333"; }
-            // 在 toggleEdit 的 else 區塊中加入
-            const dateInput = card.querySelector('.editable-date');
-            if (dateInput) {
-                up.date = dateInput.value.replace(/-/g, '.'); // 將 2026-02-05 轉回 2026.02.05 儲存
+            const card = document.getElementById(`card-${id}`);
+                const newTitle = card.querySelector('.edit-input').value;
+                const newDate = document.getElementById(`date-input-${id}`).value;
+            
+                if (newTitle.trim()) {
+                    // 將日期格式從 2026-02-05 轉回 2026.02.05
+                    const formattedDate = newDate.replace(/-/g, '.');
+            
+                    db.ref(`trips/${id}`).update({ 
+                        title: newTitle,
+                        date: formattedDate 
+                    }).then(() => {
+                        toggleEdit(id); // 儲存後關閉編輯模式
+                    });
+                }
             }
-        }
         function openImgModal(id) { currentTripId = id; document.getElementById('imgModal').style.display='flex'; }
         function applyImageChange() { const file = document.getElementById('imgFileInput').files[0]; const url = document.getElementById('imgUrlInput').value; if (file) { const reader = new FileReader(); reader.onload = (e) => { db.ref('trips/'+currentTripId).update({img: e.target.result}); closeModal('imgModal'); }; reader.readAsDataURL(file); } else if (url) { db.ref('trips/'+currentTripId).update({img: url}); closeModal('imgModal'); } }
         function addNewItem() { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).once('value', s => { const i = s.val()||[]; i.push({time:"10:00",place:"新地點",note:"內容"}); db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(i); }); }
@@ -720,3 +749,4 @@
     </script>
 </body>
 </html>
+
