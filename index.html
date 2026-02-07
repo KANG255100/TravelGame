@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.4</title>
+    <title>我的旅遊雲端手帳 v1.5.5</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -214,7 +214,6 @@
             cursor: pointer; transition: background 0.3s;
         }
         .btn-view:hover { background: #21867a; }
-        .btn-view:active { transform: scale(0.98); }
         
         /* 新增：日期輸入框預設隱藏，只有編輯模式才顯示 */
         .date-edit-input {
@@ -359,7 +358,7 @@
         }
 
         function renderCard(id, item) {
-            // 將 2026.02.05 轉換成 2026-02-05 格式，HTML5 日期選取器才讀得懂
+            // 轉換日期給 input 用
             const dateValue = item.date ? item.date.replace(/\./g, '-') : '';
         
             return `
@@ -757,5 +756,6 @@
     </script>
 </body>
 </html>
+
 
 
