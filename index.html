@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.20</title>
+    <title>我的旅遊雲端手帳 v1.5.21</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -414,12 +414,12 @@
         }
 
         function renderCard(id, item) {
+            // 處理預設日期文字：如果沒有日期，顯示「我的旅遊期間」
+            const dateText = item.date ? item.date : "我的旅遊期間";
             // 解析日期
             let s = "", e = "";
             if (item.date && item.date.includes('~')) {
-                const p = item.date.split('~');
-                s = p[0].trim().replace(/\./g, '-').substring(0, 10);
-                e = p[1].trim().replace(/\./g, '-').substring(0, 10);
+                [s, e] = item.date.split(' ~ ').map(d => d.replace(/\./g, '-'))
             }
 
             const html = `
@@ -437,23 +437,23 @@
                     <div class="trip-info">
                         <div class="trip-date">${item.date || '點擊編輯設定日期'}</div>
                         
-                        <div class="date-range-group" style="display: none; flex-direction: row; gap: 10px; margin-bottom: 12px; position: relative; z-index: 999;">
-                            <div class="date-box" onclick="promptDatePicker('${id}', 'start')" style="flex: 1; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-                                <span style="font-size: 11px; color: #888;">開始日期</span>
+                        <div class="date-range-group" style="display: none; flex-direction: row; gap: 10px; margin-bottom: 12px;">
+                            <div class="date-box" style="flex: 1; position: relative; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 8px; text-align: center;">
+                                <span style="font-size: 11px; color: #888; display: block;">開始日期</span>
                                 <span class="start-date-val" style="font-size: 14px; font-weight: bold;">${s || '尚未設定'}</span>
-                                <input type="date" class="hidden-date-start" value="${s}" style="display:none;">
+                                <input type="date" class="hidden-date-start" value="${s}" 
+                                       style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
                             </div>
-                            <div class="date-box" onclick="promptDatePicker('${id}', 'end')" style="flex: 1; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-                                <span style="font-size: 11px; color: #888;">結束日期</span>
+                            <div class="date-box" style="flex: 1; position: relative; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 8px; text-align: center;">
+                                <span style="font-size: 11px; color: #888; display: block;">結束日期</span>
                                 <span class="end-date-val" style="font-size: 14px; font-weight: bold;">${e || '尚未設定'}</span>
-                                <input type="date" class="hidden-date-end" value="${e}" style="display:none;">
+                                <input type="date" class="hidden-date-end" value="${e}" 
+                                       style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
                             </div>
                         </div>
 
-                        <div class="trip-title editable" data-field="title">${item.title}</div>
-                        
-                        <div class="trip-desc editable" data-field="desc">${item.desc || '冒險描述...'}</div>
-                        <div class="star-rating" onclick="handleRating(event, '${id}')">${generateStars(item.rating || 0)}</div>
+                        <div class="trip-title">${item.title}</div>
+                        <div class="trip-desc" style="font-size: 14px; color: #666; margin-top: 5px;">${item.desc || '冒險開始'}</div>
                     </div>
                 </article>`;
             document.getElementById('tripGrid').insertAdjacentHTML('beforeend', html);
@@ -766,43 +766,66 @@
         function toggleEdit(btn, id) {
             const card = document.getElementById('card-' + id);
             const titleEl = card.querySelector('.trip-title');
-            const dateText = card.querySelector('.trip-date');
+            const descEl = card.querySelector('.trip-desc');
+            const dateDisplay = card.querySelector('.trip-date');
             const dateGroup = card.querySelector('.date-range-group');
         
             if (!btn.classList.contains('active-editing')) {
-                // --- 進入編輯 ---
-                btn.className = 'btn-action active-editing'; // 重置所有 class 並加入亮燈
-                btn.innerText = '儲存標題';
-                btn.style.backgroundColor = '#2ecc71'; 
-                btn.style.color = '#ffffff';
+                // --- 進入編輯模式 ---
+                btn.classList.add('active-editing');
+                btn.innerText = '儲存修改';
+                btn.style.backgroundColor = '#2ecc71'; // 亮綠色
+                btn.style.color = '#fff';
         
+                // 1. 隱藏上方重複的日期資訊
+                if (dateDisplay) dateDisplay.style.display = 'none';
                 dateGroup.style.display = 'flex';
-                if (dateText) dateText.style.display = 'none';
         
+                // 2. 標題編輯：加上綠色框框，但保持原本字體大小與排版
                 const currentTitle = titleEl.innerText;
-                titleEl.innerHTML = `<input type="text" class="edit-input" value="${currentTitle}" style="width:100%; padding:10px; border:2px solid #2ecc71; border-radius:8px; font-size:16px;">`;
-                titleEl.querySelector('input').focus();
+                titleEl.innerHTML = `<input type="text" class="edit-title-input" value="${currentTitle}" 
+                    style="width: 100%; font-size: inherit; font-family: inherit; font-weight: bold; border: 2px solid #2ecc71; border-radius: 5px; padding: 5px; box-sizing: border-box; background: #fff;">`;
+        
+                // 3. 描述編輯 (冒險開始)：同樣加上綠色框框
+                const currentDesc = descEl.innerText;
+                descEl.innerHTML = `<input type="text" class="edit-desc-input" value="${currentDesc}" 
+                    style="width: 100%; font-size: inherit; font-family: inherit; border: 2px solid #2ecc71; border-radius: 5px; padding: 5px; box-sizing: border-box; background: #fff;">`;
+        
+                // 自動監聽日期變更，即時反映在格子文字上
+                card.querySelectorAll('input[type="date"]').forEach(inp => {
+                    inp.onchange = (e) => {
+                        e.target.previousElementSibling.innerText = e.target.value.replace(/-/g, '.');
+                    };
+                });
+        
             } else {
-                // --- 儲存 ---
-                const input = titleEl.querySelector('input');
-                const newTitle = input ? input.value.trim() : titleEl.innerText;
-                
+                // --- 執行儲存 ---
+                const newTitle = card.querySelector('.edit-title-input').value.trim();
+                const newDesc = card.querySelector('.edit-desc-input').value.trim();
                 const s = card.querySelector('.hidden-date-start').value.replace(/-/g, '.');
                 const e = card.querySelector('.hidden-date-end').value.replace(/-/g, '.');
+                
                 const finalDate = (s && e) ? `${s} ~ ${e}` : (s || e || "");
         
-                titleEl.innerHTML = newTitle;
-                if (dateText) {
-                    dateText.innerText = finalDate;
-                    dateText.style.display = 'block';
-                }
-        
-                db.ref('trips/' + id).update({ title: newTitle, date: finalDate }).then(() => {
-                    // 徹底重置按鈕
+                // 更新 Firebase
+                db.ref('trips/' + id).update({
+                    title: newTitle,
+                    desc: newDesc,
+                    date: finalDate
+                }).then(() => {
+                    // 恢復 UI
+                    titleEl.innerHTML = newTitle;
+                    descEl.innerHTML = newDesc;
+                    if (dateDisplay) {
+                        dateDisplay.innerText = finalDate || "我的旅遊期間";
+                        dateDisplay.style.display = 'block';
+                    }
+                    dateGroup.style.display = 'none';
+                    
+                    // 重置按鈕
                     btn.classList.remove('active-editing');
                     btn.innerText = '編輯標題';
-                    btn.removeAttribute('style'); // 移除手動設置的 style，解決變白問題
-                    dateGroup.style.display = 'none';
+                    btn.removeAttribute('style');
                 });
             }
         }
@@ -884,6 +907,7 @@
     </script>
 </body>
 </html>
+
 
 
 
