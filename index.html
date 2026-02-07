@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.12</title>
+    <title>我的旅遊雲端手帳 v1.5.13</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -244,6 +244,14 @@
 
         .date-edit-input {
             flex: 1; padding: 5px; border: 1px solid #ccc; border-radius: 5px; font-size: 13px;
+        }
+
+        /* 編輯按鈕亮燈效果 */
+        .btn-action.active-editing {
+            background-color: #264653 !important;
+            color: white !important;
+            box-shadow: 0 0 10px rgba(42, 157, 143, 0.5);
+            transform: scale(0.95);
         }
         
     </style>
@@ -718,17 +726,57 @@
             const titleEl = card.querySelector('.trip-title');
             const dateGroup = card.querySelector('.date-range-group');
 
-            // 1. 先顯示/隱藏日期選取器
-            if (dateGroup.style.display === 'none' || dateGroup.style.display === '') {
+            // 1. 切換按鈕的「亮燈」狀態 (亮燈時變綠色並顯示儲存)
+            btn.classList.toggle('active-editing');
+            if (btn.classList.contains('active-editing')) {
+                btn.innerText = '儲存標題';
+                btn.style.backgroundColor = '#2ecc71'; // 亮綠燈
                 dateGroup.style.display = 'flex';
+                // 這裡我們直接實作編輯模式，不呼叫 enterEditMode
+                makeEditable(titleEl);
             } else {
-                dateGroup.style.display = 'none';
+                // 觸發儲存並關燈
+                const input = titleEl.querySelector('input');
+                if (input) {
+                    saveAllData(id, input.value, card);
+                }
+            }
+        }
+        // 輔助函數：讓文字變輸入框
+        function makeEditable(el) {
+            const originalText = el.innerText;
+            el.innerHTML = `<input type="text" class="edit-input" value="${originalText}" style="width:100%; padding:5px; border:1px dashed #2ecc71;">`;
+            el.querySelector('input').focus();
+        }
+
+        // 核心儲存邏輯：同時抓標題與日期
+        function saveAllData(id, newTitle, card) {
+            const startInp = card.querySelector('.start-date');
+            const endInp = card.querySelector('.end-date');
+            
+            // 轉換格式: 2026-02-27 -> 2026.02.27
+            const startD = startInp.value.replace(/-/g, '.');
+            const endD = endInp.value.replace(/-/g, '.');
+
+            let finalDate = "";
+            if (startD && endD) {
+                finalDate = `${startD} ~ ${endD}`;
+            } else if (startD) {
+                finalDate = startD;
             }
 
-            // 2. 觸發原始 v1.4.20 的編輯模式
-            if (titleEl) {
-                enterEditMode(titleEl);
-            }
+            // 更新到 Firebase
+            db.ref('trips/' + id).update({
+                title: newTitle,
+                date: finalDate
+            }).then(() => {
+                // 回復 UI 狀態
+                const btn = card.querySelector('button[onclick*="toggleEdit"]');
+                btn.innerText = '編輯標題';
+                btn.style.backgroundColor = ''; 
+                btn.classList.remove('active-editing');
+                card.querySelector('.date-range-group').style.display = 'none';
+            });
         }
         function openImgModal(id) { currentTripId = id; document.getElementById('imgModal').style.display='flex'; }
         function applyImageChange() { const file = document.getElementById('imgFileInput').files[0]; const url = document.getElementById('imgUrlInput').value; if (file) { const reader = new FileReader(); reader.onload = (e) => { db.ref('trips/'+currentTripId).update({img: e.target.result}); closeModal('imgModal'); }; reader.readAsDataURL(file); } else if (url) { db.ref('trips/'+currentTripId).update({img: url}); closeModal('imgModal'); } }
@@ -760,6 +808,7 @@
     </script>
 </body>
 </html>
+
 
 
 
