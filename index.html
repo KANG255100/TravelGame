@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.4.22</title>
+    <title>我的旅遊雲端手帳 v1.4.23</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -346,12 +346,14 @@
                         <button class="btn-action" style="color:var(--danger-color);" onclick="askDeleteTrip('${id}')">刪除行程</button>
                     </div>
                     <div class="trip-info">
-                        <div class="trip-date-display">${formatTripDateRange(item.date, item.days)}</div>
-                        
-                        <input type="date" class="trip-date-input" 
-                               value="${item.date.replace(/\./g, '-')}" 
-                               style="display:none; width:100%; margin-bottom:10px;"
-                               onchange="updateTripDate('${id}', this.value)">
+                        <div class="trip-date date-display">${formatTripDateRange(item.date, item.days)}</div>
+                            
+                            <input type="date" class="trip-date-input edit-date" 
+                                   value="${item.date.includes('.') ? item.date.replace(/\./g, '-') : item.date}" 
+                                   style="display:none; width:100%; margin-bottom:5px;"
+                                   onchange="updateTripDate('${id}', this.value)">
+                                   
+                            <div class="trip-title">${item.title}</div>
                         <div class="trip-date-display" id="display-date-${id}">${formatTripDateRange(item.date, item.days)}</div>
                         <div class="trip-title editable" data-field="title">${item.title}</div>
                         <div class="trip-desc editable" data-field="desc">${item.desc || '冒險描述...'}</div>
@@ -453,7 +455,15 @@
                             `;
                         });
                         dayHtml += `<button class="btn-add" onclick="addItem(${index})">+ 新增項目</button>`;
-                        content.innerHTML = dayHtml;
+                        // 計算當天日期
+                        const startDate = new Date(tripData.date.replace(/\./g, '-'));
+                        const currentDay = new Date(startDate);
+                        currentDay.setDate(startDate.getDate() + index);
+                        const weekNames = ['日', '一', '二', '三', '四', '五', '六'];
+                        const dateStr = `${currentDay.getMonth() + 1}/${currentDay.getDate()} (${weekNames[currentDay.getDay()]})`;
+                        
+                        // 顯示帶有日期的標題
+                        content.innerHTML = `<h2 style="color:var(--primary-color);">第 ${index + 1} 天 - ${dateStr}</h2>`;
                     }
                 });
             });
@@ -671,6 +681,14 @@
         function initSortableItems() { if (sortableInstance) sortableInstance.destroy(); sortableInstance = Sortable.create(document.getElementById('itineraryContent'), { handle: '.item-drag-handle', animation: 200, onEnd: () => { const newItems = []; document.querySelectorAll('.itinerary-item').forEach(el => { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${el.dataset.idx}`).once('value', s => { newItems.push(s.val()); if(newItems.length === document.querySelectorAll('.itinerary-item').length) db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(newItems); }); }); } }); }
         function toggleEdit(btn, id) {
             const card = btn.closest('.trip-card'); const editables = card.querySelectorAll('.editable');
+            const dateDisplay = card.querySelector('.date-display');
+            const dateInput = card.querySelector('.edit-date');
+            const isEditing = card.classList.contains('editing-mode-active');
+            
+            if (dateDisplay && dateInput) {
+                dateDisplay.style.display = isEditing ? 'none' : 'block';
+                dateInput.style.display = isEditing ? 'block' : 'none';
+            }
             if (btn.innerText === "編輯標題") { editables.forEach(el => { el.contentEditable = true; el.classList.add('editing-mode'); }); btn.innerText = "儲存標題"; btn.style.background = "#2ecc71"; btn.style.color = "white"; } 
             else { const up = {}; editables.forEach(el => { up[el.dataset.field] = el.innerText; el.contentEditable = false; el.classList.remove('editing-mode'); }); db.ref('trips/'+id).update(up); btn.innerText = "編輯標題"; btn.style.background = "#eee"; btn.style.color = "#333"; }
             // 在 toggleEdit 的 else 區塊中加入
@@ -726,16 +744,16 @@
             return dayCount <= 1 ? format(start) : `${format(start)} ~ ${format(end)}`;
         }
 
-        function updateTripDate(id, newDateValue) {
-            // 將 HTML5 的 2026-02-05 轉回你習慣的 2026.02.05 格式儲存
-            const formattedDate = newDateValue.replace(/-/g, '.');
-            db.ref(`trips/${id}`).update({ date: formattedDate })
-              .then(() => console.log("日期已同步更新"));
+        function updateTripDate(id, val) {
+            // 將 2026-02-05 轉回 2026.02.05 存進 Firebase
+            const formatted = val.replace(/-/g, '.');
+            db.ref('trips/' + id).update({ date: formatted });
         }
         
     </script>
 </body>
 </html>
+
 
 
 
