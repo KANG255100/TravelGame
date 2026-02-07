@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.7</title>
+    <title>我的旅遊雲端手帳 v1.5.8</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -202,6 +202,31 @@
 
         /* 根據計畫：隱藏主介面上原本顯示的日期欄位 */
         .trip-date { display: none !important; }
+
+        /* 1. 日期編輯容器：放在標題上方 */
+        .date-range-group {
+            display: none; /* 平常隱藏 */
+            flex-direction: row;
+            gap: 5px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        /* 只有編輯模式啟動時才顯示日期容器 */
+        .editing-mode-active .date-range-group {
+            display: flex !important;
+        }
+
+        .date-edit-input {
+            flex: 1;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+
+        /* 強制隱藏原本主介面上顯示日期的那一行文字 */
+        .trip-date { display: none !important; }
         
     </style>
 </head>
@@ -328,8 +353,15 @@
         }
 
         function renderCard(id, item) {
-            // 將 2026.02.06 轉換為 2026-02-06 格式供 HTML5 日期選取器使用
-            const dateValue = item.date ? item.date.replace(/\./g, '-') : '';
+            // 處理舊資料：如果原本是 "2026.02.06 ~ 2026.02.08"，拆分成兩個值
+            let startVal = "", endVal = "";
+            if (item.date && item.date.includes('~')) {
+                const parts = item.date.split('~');
+                startVal = parts[0].trim().replace(/\./g, '-');
+                endVal = parts[1].trim().replace(/\./g, '-');
+            } else if (item.date) {
+                startVal = item.date.replace(/\./g, '-');
+            }
 
             const html = `
                 <article class="trip-card" data-id="${id}" id="card-${id}">
@@ -344,10 +376,14 @@
                         <button class="btn-action" style="color:var(--danger-color);" onclick="askDeleteTrip('${id}')">刪除行程</button>
                     </div>
                     <div class="trip-info">
+                        <div class="date-range-group">
+                            <input type="date" class="date-edit-input start-date" value="${startVal}">
+                            <span style="font-size:12px">~</span>
+                            <input type="date" class="date-edit-input end-date" value="${endVal}">
+                        </div>
+
                         <div class="trip-title editable" data-field="title">${item.title}</div>
                         
-                        <input type="date" class="date-edit-input" id="date-input-${id}" value="${dateValue}">
-
                         <div class="trip-desc editable" data-field="desc">${item.desc || '冒險描述...'}</div>
                         <div class="star-rating" onclick="handleRating(event, '${id}')">${generateStars(item.rating || 0)}</div>
                     </div>
@@ -660,9 +696,13 @@
         function updateItemField(idx, f, v) { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${idx}`).update({ [f]: v }); }
         function initSortableItems() { if (sortableInstance) sortableInstance.destroy(); sortableInstance = Sortable.create(document.getElementById('itineraryContent'), { handle: '.item-drag-handle', animation: 200, onEnd: () => { const newItems = []; document.querySelectorAll('.itinerary-item').forEach(el => { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${el.dataset.idx}`).once('value', s => { newItems.push(s.val()); if(newItems.length === document.querySelectorAll('.itinerary-item').length) db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(newItems); }); }); } }); }
         function toggleEdit(btn, id) {
-            const card = btn.closest('.trip-card'); const editables = card.querySelectorAll('.editable');
-            if (btn.innerText === "編輯標題") { editables.forEach(el => { el.contentEditable = true; el.classList.add('editing-mode'); }); btn.innerText = "儲存標題"; btn.style.background = "#2ecc71"; btn.style.color = "white"; } 
-            else { const up = {}; editables.forEach(el => { up[el.dataset.field] = el.innerText; el.contentEditable = false; el.classList.remove('editing-mode'); }); db.ref('trips/'+id).update(up); btn.innerText = "編輯標題"; btn.style.background = "#eee"; btn.style.color = "#333"; }
+            const card = document.getElementById('card-' + id);
+            // 切換 CSS class，讓日期群組與標題輸入框同時出現或消失
+            card.classList.toggle('editing-mode-active');
+            
+            // 這裡是原本 v1.4.20 的邏輯，讓原本的標題欄位進入編輯狀態
+            const titleEl = card.querySelector('.trip-title');
+            enterEditMode(titleEl);
         }
         function openImgModal(id) { currentTripId = id; document.getElementById('imgModal').style.display='flex'; }
         function applyImageChange() { const file = document.getElementById('imgFileInput').files[0]; const url = document.getElementById('imgUrlInput').value; if (file) { const reader = new FileReader(); reader.onload = (e) => { db.ref('trips/'+currentTripId).update({img: e.target.result}); closeModal('imgModal'); }; reader.readAsDataURL(file); } else if (url) { db.ref('trips/'+currentTripId).update({img: url}); closeModal('imgModal'); } }
@@ -694,4 +734,5 @@
     </script>
 </body>
 </html>
+
 
