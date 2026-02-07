@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.16</title>
+    <title>我的旅遊雲端手帳 v1.5.17</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -418,12 +418,17 @@
                         <button class="btn-action" style="color:var(--danger-color);" onclick="askDeleteTrip('${id}')">刪除行程</button>
                     </div>
                     <div class="trip-info">
-                        <div class="trip-date" style="display:none">${item.date}</div>
+                        <div class="trip-date">${item.date || '點擊編輯設定日期'}</div>
                         
-                        <div class="date-range-group" style="display:none; flex-direction:row; gap:5px; align-items:center; margin-bottom:5px;">
-                            <input type="date" class="date-edit-input start-date" value="${s}" style="flex:1; padding:5px; border:1px solid #ccc; border-radius:5px; font-size:13px;">
-                            <span>~</span>
-                            <input type="date" class="date-edit-input end-date" value="${e}" style="flex:1; padding:5px; border:1px solid #ccc; border-radius:5px; font-size:13px;">
+                        <div class="date-range-group" style="display: none; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <span style="font-size: 12px; color: #666; width: 40px;">開始</span>
+                                <input type="date" class="date-edit-input start-date" value="${s}" style="flex: 1; height: 40px; border: 1px solid #ccc; border-radius: 8px; padding: 0 10px;">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <span style="font-size: 12px; color: #666; width: 40px;">結束</span>
+                                <input type="date" class="date-edit-input end-date" value="${e}" style="flex: 1; height: 40px; border: 1px solid #ccc; border-radius: 8px; padding: 0 10px;">
+                            </div>
                         </div>
 
                         <div class="trip-title editable" data-field="title">${item.title}</div>
@@ -742,63 +747,52 @@
         function toggleEdit(btn, id) {
             const card = document.getElementById('card-' + id);
             const titleEl = card.querySelector('.trip-title');
-            const dateDisplay = card.querySelector('.trip-date');
+            const dateText = card.querySelector('.trip-date');
             const dateGroup = card.querySelector('.date-range-group');
-
+        
             const isEditing = btn.classList.contains('active-editing');
-
+        
             if (!isEditing) {
                 // --- 進入編輯模式 ---
                 btn.classList.add('active-editing');
                 btn.innerText = '儲存標題';
+                btn.style.backgroundColor = '#2ecc71'; // 亮綠色
                 
-                // 顯示日期選取器，隱藏原本的純文字日期
-                dateGroup.style.display = 'flex';
-                if (dateDisplay) dateDisplay.style.display = 'none';
+                dateGroup.style.display = 'flex'; // 顯示日期選取器
+                dateText.style.display = 'none';   // 隱藏原本的純文字
                 
-                // 【核心修正】：要把原本的標題文字塞進 input，不然會變空白
+                // 標題轉輸入框 (保留原本文字)
                 const currentTitle = titleEl.innerText;
-                titleEl.innerHTML = `<input type="text" class="edit-input" value="${currentTitle}" style="width:100%; padding:5px; border:2px solid #2ecc71; border-radius:5px;">`;
+                titleEl.innerHTML = `<input type="text" class="edit-input" value="${currentTitle}" style="width:100%; padding:8px; border:2px solid #2ecc71; border-radius:8px;">`;
                 titleEl.querySelector('input').focus();
+                
             } else {
-                // --- 執行儲存 ---
+                // --- 儲存模式 ---
                 const input = titleEl.querySelector('input');
-                const newTitle = input ? input.value.trim() : "";
+                const newTitle = input ? input.value.trim() : titleEl.innerText;
                 
-                const startInp = card.querySelector('.start-date');
-                const endInp = card.querySelector('.end-date');
-                
-                const startD = startInp.value.replace(/-/g, '.');
-                const endD = endInp.value.replace(/-/g, '.');
-
-                let finalDate = "";
-                if (startD && endD) {
-                    finalDate = `${startD} ~ ${endD}`;
-                } else if (startD) {
-                    finalDate = startD;
-                }
-
-                if (newTitle === "") {
-                    alert("標題不能空著喔！");
-                    return;
-                }
-
-                // 立即更新 UI，防止閃爍消失
-                titleEl.innerHTML = newTitle;
-                if (dateDisplay) {
-                    dateDisplay.innerText = finalDate;
-                    dateDisplay.style.display = 'block';
-                }
-
-                // 存入 Firebase
+                const startVal = card.querySelector('.start-date').value;
+                const endVal = card.querySelector('.end-date').value;
+        
+                // 格式化日期：將 2026-02-07 轉為 2026.02.07
+                const s = startVal.replace(/-/g, '.');
+                const e = endVal.replace(/-/g, '.');
+                const finalDate = (s && e) ? `${s} ~ ${e}` : (s || e || "");
+        
+                // 更新 Firebase
                 db.ref('trips/' + id).update({
                     title: newTitle,
                     date: finalDate
                 }).then(() => {
-                    // 恢復按鈕狀態
+                    // 恢復 UI
+                    titleEl.innerHTML = newTitle;
+                    dateText.innerText = finalDate;
+                    dateText.style.display = 'block';
+                    dateGroup.style.display = 'none';
+                    
                     btn.classList.remove('active-editing');
                     btn.innerText = '編輯標題';
-                    dateGroup.style.display = 'none';
+                    btn.style.backgroundColor = '';
                 });
             }
         }
@@ -868,6 +862,7 @@
     </script>
 </body>
 </html>
+
 
 
 
