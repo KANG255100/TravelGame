@@ -1,578 +1,760 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧旅遊手帳 v1.5 (日期連動版)</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我的旅遊雲端手帳 v1.5.1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         :root {
-            --primary-color: #2a9d8f;
-            --secondary-color: #e9c46a;
-            --danger-color: #e76f51;
-            --text-color: #264653;
-            --bg-color: #f4f4f9;
-            --card-bg: #ffffff;
-            --modal-bg: rgba(0,0,0,0.6);
+            --primary-color: #2a9d8f; --danger-color: #e63946; --star-color: #ffbe0b;
+            --bg-color: #f4f7f6; --white: #ffffff; --shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        html, body { overflow-x: hidden; width: 100%; position: relative; margin: 0; padding: 0; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); padding-bottom: 50px; }
 
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
-            color: var(--text-color);
-            padding-bottom: 80px;
-        }
+        .top-banner { width: 100%; height: 320px; background-size: cover; background-position: center; display: flex; justify-content: center; align-items: center; color: white; position: relative; }
+        .top-banner h1 { font-family: 'Caveat', cursive; font-size: 5rem; margin: 0; transform: rotate(-4deg); text-shadow: 3px 6px 15px rgba(0,0,0,0.4); text-align: center; }
+        @media (max-width: 600px) { .top-banner h1 { font-size: 3rem; transform: rotate(-2deg); } }
 
-        h1 {
-            text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 30px;
-        }
+        .main-content { max-width: 1100px; margin: 30px auto 0; padding: 0 15px; }
+        .header-actions { background: var(--white); padding: 15px 20px; border-radius: 12px; box-shadow: var(--shadow); display: flex; justify-content: flex-end; margin-bottom: 25px; }
+        .grid-system { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
 
-        /* --- 旅程卡片網格 --- */
-        .trips-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        /* 核心卡片樣式 - 完整保留 v1.3.0 */
+        .trip-card { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 480px; position: relative; }
+        .img-container { position: relative; width: 100%; height: 180px; background: #333; flex-shrink: 0; }
+        .trip-img { width: 100%; height: 100%; object-fit: cover; }
+        .img-edit-gear { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; background: rgba(255,255,255,0.9); border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: pointer; font-size: 20px; transition: transform 0.6s ease; }
+        .img-edit-gear:hover { transform: rotate(180deg); }
 
-        .trip-card {
-            background: var(--card-bg);
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
+        .card-tools { padding: 10px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; gap: 8px; flex-shrink: 0; }
+        .btn-action { flex: 1; border: none; height: 38px; border-radius: 6px; font-weight: 900; cursor: pointer; background: #eee; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; color: #333; padding: 0; white-space: nowrap; }
+
+        .trip-info { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+        .trip-title { margin: 0; font-size: 1.4rem; font-weight: bold; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; }
+        .trip-desc { color: #666; font-size: 0.95rem; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; flex-grow: 1; }
+
+        .editable { outline: none; border-radius: 4px; padding: 2px 5px; }
+        .editing-mode { background-color: #fffde7; border: 1px dashed #ffa000; }
+        .star-rating { color: #e0e0e0; font-size: 1.5rem; margin-top: auto; cursor: pointer; flex-shrink: 0; }
+        .star-rating .filled { color: var(--star-color); }
+
+        /* 側面板與四鈕樣式 */
+        .side-panel { position: fixed; top: 0; right: -100%; width: 80%; height: 100%; background: white; box-shadow: -10px 0 30px rgba(0,0,0,0.25); z-index: 3000; transition: right 0.4s ease; display: flex; flex-direction: column; overflow: hidden; }
+        .side-panel.open { right: 0; }
+        @media (max-width: 600px) { .side-panel { width: 100%; } }
+
+        .panel-header { padding: 15px 20px; background: var(--primary-color); color: white; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-shrink: 0; }
+        .panel-ctrl-btn { padding: 6px 4px; border-radius: 6px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; font-size: 0.75rem; cursor: pointer; font-weight: bold; text-align: center; }
+        .panel-ctrl-btn.active { background: white; color: var(--primary-color); }
+
+        .itinerary-content { flex-grow: 1; overflow-y: auto; padding: 20px; background: #fdfdfd; -webkit-overflow-scrolling: touch; }
+
+        /* 2. 找回綠色左邊線 & 3. 加大項目間距 */
+        .itinerary-item {
+            border-left: 4px solid var(--primary-color); /* 綠色邊線回歸 */
+            margin-bottom: 35px;    /* 加大每個行程項目之間的距離 */
+            padding-left: 18px;    /* 增加內部間距 */
             position: relative;
+            background: white;
         }
 
-        .trip-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .trip-card img {
-            width: 100%;
-            height: 180px;
-            object-fit: cover;
+        /* 時間框美化：放大並對齊按鈕 */
+        .itinerary-item input[type="time"] {
+            border: 1px solid #ddd;
+            padding: 0 10px; /* 減少上下 padding，靠 height 控制 */
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #333;
+            background-color: #f9f9f9;
+            height: 40px;    /* 與 .btn-maps 高度一致 */
+            line-height: 40px;
+            width: auto;
+            min-width: 130px;
             cursor: pointer;
+            box-sizing: border-box; /* 確保高度包含邊框 */
+            vertical-align: middle;
         }
 
-        .trip-info {
-            padding: 15px;
+        .btn-maps {
+            height: 40px;    /* 確保按鈕也是 40px */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
         }
 
-        /* --- 顯示模式 vs 編輯模式 --- */
+        /* 4. 確保拖曳手把在編輯模式出現 */
+        .edit-mode-active .item-drag-handle {
+            display: flex !important; /* 強制顯示拖曳手把 */
+        }
+
+        /* 編輯模式下的虛線框 (需求 3) */
+        .edit-mode-active .item-place-title, 
+        .edit-mode-active .item-note-text {
+            border: 1.5px dashed #aaa !important; /* 灰虛線框 */
+            padding: 8px !important;
+            margin: 5px 0 !important;
+            border-radius: 6px;
+            background-color: #fffcf0; /* 淡淡的黃底，提示這裡可以改 */
+        }
+
+        /* 標題與備註的間距 (需求 4) */
+        .item-place-title {
+            font-weight: 800;
+            font-size: 1.1rem;
+            margin-bottom: 12px; /* 這裡拉開距離 */
+            min-height: 1.2em;
+        }
+
+        .item-note-text {
+            color: #666;
+            line-height: 1.6;
+            min-height: 1.2em;
+        }
+
+        .item-drag-handle { position: absolute; left: -15px; top: 10px; width: 40px; height: 40px; background: #eee; border: 1px solid #ccc; border-radius: 4px; display: none; align-items: center; justify-content: center; cursor: grab; z-index: 50; touch-action: none !important; }
+        .edit-mode-active .item-drag-handle { display: flex; }
+
+        .btn-maps { padding: 6px 12px; border-radius: 6px; border: 1px solid #4285F4; background: white; color: #4285F4; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
+        .btn-maps.linked { background: #4285F4; color: white; }
+
+        /* 記帳模組樣式 */
+        .finance-item { border-bottom: 1px solid #eee; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
+        .cat-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; color: white; margin-right: 5px; font-weight: bold; }
+        .report-summary { background: #f0f7f6; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; border: 1px solid var(--primary-color); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 4000; backdrop-filter: blur(4px); }
+        /* 記帳對話框：所有格子基礎統一樣式 */
+        .modal-content input, 
+        .modal-content select,
+        #exDate  {
+            background-color: #ffffff !important; /* 移除原本的灰色，改為純白 */
+            width: 100% !important;   /* 強制所有格子填滿寬度 */
+            height: 45px !important;  /* 強制所有格子高度固定為 45 像素 */
+            box-sizing: border-box !important; /* 強制寬度包含邊框與內距，解決溢出問題 */
+            margin: 10px 0 !important; /* 統一上下間距 */
+            padding: 10px 12px !important;
+            border: 1px solid #ccc !important;
+            border-radius: 8px !important;
+            font-size: 16px !important;
+            display: block !important;
+            appearance: none;         /* 移除瀏覽器對輸入框的預設外觀 */
+            -webkit-appearance: none; /* 針對 Safari/Chrome 移除預設外觀 */
+        }
+
+        /* 針對匯率那一列的間距特別縮減 */
+        .modal-content div[style*="display: flex"] {
+            width: 100% !important;
+            gap: 10px;
+            margin: 5px 0 !important; /* 移除外層容器的間距 */
+            padding: 0 !important;         /* 消除內距，防止撐開 */
+        }
+
+        /* 確保匯率列內部的格子不要再重複計算 margin */
+        #expCurrency, #expRate {
+            margin: 0 !important;          /* 內部格子不設邊距，由外層 Flex 容器統一控制 */
+        }
+
+        /* 確保匯率輸入框在電腦版也是白色 */
+        #expRate {
+            background-color: #ffffff !important;
+        }
+
+        /* 針對「支出日期」單獨修正：解決右邊多出來或電腦版縮短的問題 */
+        #expDate {
+            width: 100% !important;   /* 確保跟金額、備註一樣寬 */
+            max-width: 100% !important; /* 防止它因為預設樣式而變長或變短 */
+            min-height: 45px !important; /* 再次確保高度與他人一致 */
+            flex: none !important;    /* 防止在 flex 佈局中被擠壓 */
+        }
+
+        /* 確保「幣別與匯率」那一行不會因為 width: 100% 而壞掉 */
+        .modal-content div[style*="display: flex"] {
+            width: 100% !important;
+            gap: 10px;
+        }
+        .modal-content div[style*="display: flex"] input,
+        .modal-content div[style*="display: flex"] select {
+            flex: 1; /* 讓這兩格平分寬度，且依然保有 45px 的高度 */
+            width: 50% !important; /* 覆蓋掉上面的 100%，讓它們並排 */
+        }
+
         .trip-date-display {
             font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-
-        .trip-title {
-            font-size: 1.4rem;
+            color: var(--primary-color);
             font-weight: bold;
-            margin-bottom: 15px;
-            color: var(--text-color);
-        }
-
-        /* 編輯模式下的輸入框 (預設隱藏) */
-        .edit-group {
-            display: none;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .edit-group input {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-
-        .edit-group label {
-            font-size: 0.8rem;
-            color: #888;
-            margin-bottom: -5px;
-        }
-
-        /* 當卡片加上 .editing 類別時的樣式切換 */
-        .trip-card.editing .trip-date-display,
-        .trip-card.editing .trip-title,
-        .trip-card.editing .btn-edit-toggle {
-            display: none;
-        }
-
-        .trip-card.editing .edit-group,
-        .trip-card.editing .btn-save-edit {
-            display: flex; /* 或 block */
-        }
-
-        /* --- 按鈕樣式 --- */
-        button {
-            cursor: pointer;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            font-weight: 500;
-            transition: opacity 0.2s;
-        }
-        button:hover { opacity: 0.9; }
-
-        .btn-view {
-            width: 100%;
-            background: var(--primary-color);
-            color: white;
-            padding: 12px;
-            font-size: 1rem;
-            border-radius: 0 0 15px 15px;
-        }
-
-        .btn-edit-toggle {
-            background: #eee;
-            color: #555;
-            font-size: 0.8rem;
-            float: right;
-        }
-
-        .btn-save-edit {
-            display: none; /* 預設隱藏 */
-            background: var(--primary-color);
-            color: white;
-            width: 100%;
-            justify-content: center;
-            margin-top: 5px;
-        }
-
-        .btn-delete-trip {
-            background: #ffeded;
-            color: var(--danger-color);
-            font-size: 0.8rem;
-            margin-top: 10px;
-            width: 100%;
-        }
-
-        /* --- 浮動新增按鈕 --- */
-        .fab {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background: var(--secondary-color);
-            color: white;
-            border-radius: 50%;
-            font-size: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            cursor: pointer;
-            z-index: 100;
-        }
-
-        /* --- 彈窗樣式 (行程表) --- */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--modal-bg);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: white;
-            width: 90%;
-            max-width: 600px;
-            height: 85vh;
-            border-radius: 15px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .close-modal {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #aaa;
-        }
-
-        /* 行程內容區 */
-        .day-tabs {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .day-tab {
-            padding: 6px 15px;
-            background: #f0f0f0;
-            border-radius: 20px;
-            white-space: nowrap;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
-        .day-tab.active {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .itinerary-scroll {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-
-        .itinerary-item {
-            background: #f9f9f9;
-            border-left: 4px solid var(--secondary-color);
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-        }
-
-        .item-row {
-            display: flex;
-            gap: 5px;
             margin-bottom: 5px;
         }
-
-        .item-row input, .item-row textarea {
-            border: 1px solid #ddd;
-            border-radius: 4px;
+        
+        .editable-date {
+            display: none; /* 平時隱藏，編輯模式才出現 */
+            border: 1px dashed #aaa;
+            background: #fffcf0;
             padding: 5px;
+            border-radius: 4px;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        .editing-mode .editable-date {
+            display: block; /* 編輯模式下顯示選擇器 */
+        }
+        
+        .editing-mode .trip-date-display {
+            display: none; /* 編輯模式下隱藏文字 */
         }
 
-        .time-input { width: 70px; }
-        .place-input { flex: 1; font-weight: bold; }
-        .note-input { width: 100%; resize: none; height: 40px; font-size: 0.9rem; }
+        /* --- 新增：日期編輯樣式 --- */
+        .trip-date-input {
+            display: none; /* 平常隱藏 */
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
 
-        .btn-map { background: #e0f2f1; color: #00695c; padding: 5px 10px; }
-        .btn-del-item { background: transparent; color: #aaa; font-size: 1.2rem; margin-left: auto; }
-        .btn-add-item { width: 100%; border: 2px dashed #ddd; background: transparent; color: #888; margin-top: 10px; }
-
-        /* 標題動畫 */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .day-header { animation: fadeIn 0.5s; color: var(--primary-color); margin-bottom: 15px; }
+        /* 當卡片進入編輯模式時：隱藏文字，顯示輸入框 */
+        .trip-card.editing-mode-active .trip-date-display {
+            display: none;
+        }
+        .trip-card.editing-mode-active .trip-date-input {
+           display: block;
+        }
 
     </style>
 </head>
-<body>
+<body id="body">
 
-    <h1>✈️ 我的旅遊手帳</h1>
+    <header class="top-banner" id="mainBanner"><h1>Explore your life</h1></header>
 
-    <div class="trips-container" id="tripsContainer">
+    <main class="main-content">
+        <div class="header-actions">
+            <button onclick="addNewTrip()" class="btn-action" style="background: var(--primary-color); color: white; padding: 0 30px; border-radius: 30px; width: auto; flex: none;">+ 新增旅遊行程</button>
         </div>
+        <div id="tripGrid" class="grid-system"></div>
+    </main>
 
-    <div class="fab" onclick="createNewTrip()">+</div>
-
-    <div class="modal-overlay" id="itineraryModal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal()">×</span>
-            <h2 id="modalTitle">旅程詳情</h2>
-            
-            <div class="day-tabs" id="dayTabs">
-                </div>
-
-            <div class="itinerary-scroll" id="itineraryContent">
-                </div>
+    <div id="sidePanel" class="side-panel">
+        <div class="panel-header">
+            <div style="display:flex; align-items:flex-start; gap:10px; flex:1;">
+                <span style="cursor:pointer; font-size:24px;" onclick="closeSidePanel()">✕</span>
+                <h2 id="panelTitle" style="margin:0; font-size:1.1rem; word-break:break-all;">讀取中...</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 160px; flex-shrink: 0;">
+                <button id="editToggle" class="panel-ctrl-btn" onclick="togglePanelEdit()">🔓 編輯</button>
+                <button id="financeBtn" class="panel-ctrl-btn" onclick="openFinanceModal()">💰 記帳</button>
+                <button id="deleteToggle" class="panel-ctrl-btn" onclick="toggleDeleteMode()">🗑️ 刪除</button>
+                <button id="reportToggle" class="panel-ctrl-btn" onclick="toggleReportMode()">📊 明細</button>
+            </div>
+        </div>
+        <div id="dayTabsContainer" style="position: sticky; top: 0; z-index: 10; background: #f0f0f0; border-bottom: 1px solid #ddd; display: flex; height: 50px; flex-shrink: 0;">
+            <div style="width: 100px; height: 100%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-weight: 800; cursor: pointer; border-right: 1px solid #ccc; flex-shrink: 0;" onclick="addNewDay()">+ 新增天數</div>
+            <div id="dayTabs" style="display: flex; overflow-x: auto; flex-grow: 1; align-items: center; padding: 0 10px; gap: 8px;"></div>
+        </div>
+        <div class="itinerary-content" id="itineraryContent"></div>
+        <div id="panelFooter" style="padding: 15px; background: #fafafa; border-top: 1px solid #eee; text-align: center; display: none;">
+            <button class="btn-action" style="color:var(--danger-color); border:1px solid var(--danger-color); background:white; width:220px; margin:0 auto;" onclick="askDeleteDay()">捨棄這整天的行程</button>
         </div>
     </div>
 
-    <script>
-        // --- Firebase 設定 (請確保這些資訊正確) ---
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://travel-app-demo-default-rtdb.firebaseio.com", // 請確認這是您的資料庫網址
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_ID",
-            appId: "YOUR_APP_ID"
-        };
+    <div class="modal-overlay" id="imgModal">
+        <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:350px;">
+            <h3 style="text-align:center; margin-top:0;">更換封面照片</h3>
+            <input type="text" id="imgUrlInput" placeholder="貼上網址">
+            <input type="file" id="imgFileInput" accept="image/*" style="border:none;">
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-action" style="background:var(--primary-color); color:white;" onclick="applyImageChange()">確定</button>
+                <button class="btn-action" onclick="closeModal('imgModal')">取消</button>
+            </div>
+        </div>
+    </div>
 
-        // 初始化 Firebase (防止重複初始化)
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+    <div class="modal-overlay" id="financeModal" onclick="closeModal('financeModal')">
+        <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:320px;" onclick="event.stopPropagation()">
+            <h3 style="text-align:center; margin-top:0;">💰 記帳/編輯</h3>
+
+            <input type="date" id="expDate">
+
+            <input type="number" id="expAmount" placeholder="金額" inputmode="decimal">
+
+            <div style="display:flex; gap:5px; align-items:center;">
+                <select id="expCurrency" onchange="checkCurrency()" style="flex:1;">
+                    <option value="TWD">TWD (台幣)</option>
+                    <option value="JPY">JPY (日幣)</option>
+                    <option value="KRW">KRW (韓元)</option>
+                </select>
+                <input type="number" id="expRate" placeholder="匯率" step="0.0001" style="flex:1;" inputmode="decimal">
+            </div>
+
+            <select id="expCategory">
+                <option value="住宿">🏨 住宿</option>
+                <option value="交通">🚗 交通</option>
+                <option value="吃喝">🍴 吃喝</option>
+                <option value="娛樂">🎡 娛樂</option>
+                <option value="購物">🛍️ 購物</option>
+                <option value="其他">❓ 其他</option>
+            </select>
+
+            <input type="text" id="expNote" placeholder="備註">
+
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-action" style="background:var(--primary-color); color:white;" onclick="saveExpense()">儲存</button>
+                <button class="btn-action" onclick="cancelFinance()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="mapsModal">
+        <div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:85%; max-width:350px;">
+            <h3 style="text-align:center; margin-top:0;">📍 設定 Google 地點</h3>
+            <input type="text" id="mapUrlInput" placeholder="貼上共享網址">
+            <div style="display:flex; gap:10px; margin-top:10px;"><button class="btn-action" style="background:var(--primary-color); color:white;" onclick="saveMapInfo()">儲存</button><button class="btn-action" onclick="closeModal('mapsModal')">取消</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmModal"><div class="modal-content" style="background:white; padding:25px; border-radius:20px; width:80%; max-width:300px; text-align:center;">
+        <h3 id="confirmMsg">確定？</h3><div style="display:flex; gap:10px; margin-top:20px;"><button class="btn-action" style="background:var(--danger-color); color:white;" id="modalYes">確定</button><button class="btn-action" onclick="closeModal('confirmModal')">取消</button></div>
+    </div></div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyA4g7tQuKmPHRYZNdbxWbHFtvc5RnJQVzM", authDomain: "travelgame-91b3a.firebaseapp.com", databaseURL: "https://travelgame-91b3a-default-rtdb.firebaseio.com", projectId: "travelgame-91b3a", storageBucket: "travelgame-91b3a.firebasestorage.app", messagingSenderId: "498309085943", appId: "1:498309085943:web:764dae004f4c9f96d7b1f2" };
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 全域變數
-        let currentTripId = null;
-        let currentDayIndex = 0;
+        let currentTripId = null, currentDayIndex = 0, isPanelEditMode = false, isDeleteMode = false;
+        let currentMode = 'view', isReportMode = false, currentEditingItemIdx = null, sortableInstance = null;
+        const exchangeRates = { JPY: 0.22, TWD: 1, KRW: 0.024 };
 
-        // --- 1. 讀取並顯示旅程 (Main) ---
-        function loadTrips() {
-            db.ref('trips').on('value', snapshot => {
-                const container = document.getElementById('tripsContainer');
-                container.innerHTML = '';
-                const data = snapshot.val();
+        window.onload = () => {
+            const banners = [
+                "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1200", 
+                "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200",
+                "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=1200"
+            ];
+            const rand = banners[Math.floor(Math.random() * banners.length)];
+            const bannerEl = document.getElementById('mainBanner');
+            if(bannerEl) bannerEl.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('${rand}')`;
 
-                if (!data) {
-                    container.innerHTML = '<p style="text-align:center; width:100%; color:#aaa;">還沒有旅程，點擊右下角 + 新增！</p>';
-                    return;
-                }
+            loadCloudData();
+        };
 
-                Object.keys(data).forEach(key => {
-                    const trip = data[key];
-                    // 計算日期範圍文字
-                    const dateRangeText = formatTripDateRange(trip.date, trip.days ? trip.days.length : 1);
-                    // 為了 input date，需轉換格式 (YYYY.MM.DD -> YYYY-MM-DD)
-                    const dateValue = trip.date ? trip.date.replace(/\./g, '-') : '';
-                    const dayCount = trip.days ? trip.days.length : 1;
+        function loadCloudData() {
+            db.ref('trips').orderByChild('order').on('value', snap => {
+                const grid = document.getElementById('tripGrid'); grid.innerHTML = '';
+                snap.forEach(c => renderCard(c.key, c.val()));
+            });
+        }
+        function renderCard(id, item) {
+           // 轉換日期格式：將 2026.02.05 轉為 2026-02-05 給輸入框用
+            const dateForInput = item.date ? item.date.replace(/\./g, '-') : '';
 
-                    const card = document.createElement('div');
-                    card.className = 'trip-card';
-                    card.id = `card-${key}`;
-                    card.innerHTML = `
-                        <img src="${trip.img || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'}" onclick="openItinerary('${key}')">
-                        
-                        <div class="trip-info">
-                            <div class="trip-date-display">${dateRangeText}</div>
-                            <div class="trip-title">${trip.title}</div>
-                            <button class="btn-edit-toggle" onclick="toggleEdit('${key}')">編輯設定</button>
-
-                            <div class="edit-group">
-                                <label>標題</label>
-                                <input type="text" id="title-input-${key}" value="${trip.title}">
-                                
-                                <label>出發日期</label>
-                                <input type="date" id="date-input-${key}" value="${dateValue}">
-                                
-                                <label>旅遊天數 (系統自動產生 Day)</label>
-                                <input type="number" id="days-input-${key}" value="${dayCount}" min="1" max="30">
-                            </div>
-                            <button class="btn-save-edit" onclick="saveTripSettings('${key}')">儲存變更</button>
-                            
-                            <div class="edit-group" style="margin-top:10px; border-top:1px dashed #ccc; padding-top:10px;">
-                                <button class="btn-delete-trip" onclick="deleteTrip('${key}')">刪除此旅程</button>
-                            </div>
+            return `
+                <div class="trip-card" id="card-${id}" data-id="${id}">
+                    <div class="drag-handle">☰</div>
+                    <img src="${item.img}" onclick="openTrip('${id}')">
+                    <div class="trip-info">
+                        <div class="trip-date trip-date-display" data-field="date">
+                            ${formatTripDateRange(item.date, item.days)}
                         </div>
-                        <button class="btn-view" onclick="openItinerary('${key}')">查看行程</button>
-                    `;
-                    container.appendChild(card);
-                });
-            });
-        }
-
-        // --- 2. 編輯功能 (核心邏輯) ---
-        
-        // 切換編輯模式
-        function toggleEdit(id) {
-            const card = document.getElementById(`card-${id}`);
-            card.classList.toggle('editing');
-        }
-
-        // 儲存設定 (包含日期連動與天數調整)
-        function saveTripSettings(id) {
-            const newTitle = document.getElementById(`title-input-${id}`).value;
-            const newDate = document.getElementById(`date-input-${id}`).value; // YYYY-MM-DD
-            const newDayCount = parseInt(document.getElementById(`days-input-${id}`).value);
-
-            if (!newTitle || !newDate || !newDayCount) {
-                alert("請填寫完整資訊！");
-                return;
-            }
-
-            // 1. 取得舊資料以保留行程內容
-            db.ref(`trips/${id}`).once('value', snapshot => {
-                const oldTrip = snapshot.val();
-                let currentDays = oldTrip.days || [];
-
-                // 2. 調整天數 (Resize Array)
-                if (newDayCount > currentDays.length) {
-                    // 增加天數：補上空白物件
-                    for (let i = currentDays.length; i < newDayCount; i++) {
-                        currentDays.push({ items: [] });
-                    }
-                } else if (newDayCount < currentDays.length) {
-                    // 減少天數：警告並刪減
-                    if(!confirm(`您將天數從 ${currentDays.length} 減為 ${newDayCount}，多出的行程將被刪除。確定嗎？`)) return;
-                    currentDays = currentDays.slice(0, newDayCount);
-                }
-
-                // 3. 寫回資料庫
-                db.ref(`trips/${id}`).update({
-                    title: newTitle,
-                    date: newDate.replace(/-/g, '.'), // 轉回 YYYY.MM.DD
-                    days: currentDays
-                }).then(() => {
-                    alert('更新成功！');
-                    toggleEdit(id); // 關閉編輯模式
-                });
-            });
-        }
-
-        // --- 3. 行程表功能 (連動日期) ---
-
-        function openItinerary(id) {
-            currentTripId = id;
-            currentDayIndex = 0; // 重置為第一天
-            document.getElementById('itineraryModal').style.display = 'flex';
-            loadItineraryDetails();
-        }
-
-        function loadItineraryDetails() {
-            if (!currentTripId) return;
-
-            db.ref(`trips/${currentTripId}`).on('value', snapshot => {
-                const trip = snapshot.val();
-                if (!trip) return;
-
-                document.getElementById('modalTitle').innerText = trip.title;
-
-                const days = trip.days || [];
-                const tabsContainer = document.getElementById('dayTabs');
-                const contentContainer = document.getElementById('itineraryContent');
                 
-                tabsContainer.innerHTML = '';
-                contentContainer.innerHTML = '';
+                        <input type="date" class="trip-date-input" 
+                               value="${dateForInput}" 
+                               onchange="updateTripDate('${id}', this.value)">
 
-                // 計算起始日期物件
-                const startDate = new Date(trip.date.replace(/\./g, '-'));
+                        <div class="trip-title editable" data-field="title" onclick="openTrip('${id}')">${item.title}</div>
+                        <div class="edit-input-group">
+                            <input type="text" class="edit-input" value="${item.title}">
+                            <button class="btn-confirm" onclick="saveEdit('${id}')">✓</button>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-action btn-edit" onclick="toggleEdit('${id}')">編輯標題/日期</button>
+                            <button class="btn-action btn-delete" onclick="deleteTrip('${id}')">刪除</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
-                // 渲染上方 Day Tabs
+        function generateStars(r) { let s=''; for(let i=1; i<=5; i++) s+=`<span class="${i<=r?'filled':''}" data-value="${i}">★</span>`; return s; }
+        function handleRating(e, id) { if (e.target.dataset.value) db.ref('trips/'+id).update({rating: parseInt(e.target.dataset.value)}); }
+
+        // --- 核心狀態管理 (v1.4.2) ---
+        function switchMode(target) {
+            if (currentMode === target) currentMode = 'view'; else currentMode = target;
+            isPanelEditMode = (currentMode === 'edit');
+            isDeleteMode = (currentMode === 'delete');
+            isReportMode = (currentMode === 'report');
+            updateAllUIStates();
+            const tabBox = document.getElementById('dayTabsContainer');
+            if (isReportMode) { tabBox.style.display = 'none'; loadFinanceReport(); } 
+            else { tabBox.style.display = 'flex'; loadItinerary(); }
+        }
+
+        function updateAllUIStates() {
+            document.getElementById('editToggle').classList.toggle('active', isPanelEditMode);
+            document.getElementById('deleteToggle').classList.toggle('active', isDeleteMode);
+            document.getElementById('reportToggle').classList.toggle('active', isReportMode);
+            document.getElementById('editToggle').innerText = isPanelEditMode ? "🔒 儲存" : "🔓 編輯";
+            document.getElementById('panelFooter').style.display = isDeleteMode ? 'block' : 'none';
+
+            const isLocked = isPanelEditMode || isDeleteMode;
+            const financeBtn = document.getElementById('financeBtn');
+            const reportBtn = document.getElementById('reportToggle');
+            [financeBtn, reportBtn].forEach(btn => {
+                if(btn) {
+                    btn.disabled = isLocked;
+                    btn.style.opacity = isLocked ? "0.4" : "1";
+                    btn.style.pointerEvents = isLocked ? "none" : "auto";
+                }
+            });
+        }
+
+        function togglePanelEdit() { switchMode('edit'); }
+        function toggleDeleteMode() { switchMode('delete'); }
+        function toggleReportMode() { switchMode('report'); }
+
+        // --- 行程加載 (保留 v1.3.0 邏輯) ---
+        function openSidePanel(id, title) {
+            currentTripId = id; currentDayIndex = 0; currentMode = 'view';
+            isPanelEditMode = isDeleteMode = isReportMode = false;
+            document.getElementById('panelTitle').innerText = title;
+            document.getElementById('sidePanel').classList.add('open');
+            document.getElementById('body').style.overflow = 'hidden';
+            updateAllUIStates(); document.getElementById('dayTabsContainer').style.display = 'flex';
+            loadItinerary();
+        }
+
+        function loadItinerary() {
+            db.ref(`trips/${currentTripId}`).once('value', snapshot => {
+                const tripData = snapshot.val();
+                const days = tripData.days || [];
+                const tabs = document.getElementById('dayTabs');
+                const content = document.getElementById('itineraryContent');
+        
+                // --- 新增：日期計算邏輯 ---
+                // 把 2026.02.05 轉成 Date 物件
+                const startDateStr = tripData.date ? tripData.date.replace(/\./g, '-') : new Date().toISOString().split('T')[0];
+                const startDate = new Date(startDateStr);
+                // -----------------------
+
+                tabs.innerHTML = '';
+                content.innerHTML = '';
+
                 days.forEach((day, index) => {
-                    // 計算該 Day 的日期
-                    const thisDate = new Date(startDate);
-                    thisDate.setDate(startDate.getDate() + index);
-                    
+                    // --- 新增：算出每一天的日期 ---
+                    const currentDay = new Date(startDate);
+                    currentDay.setDate(startDate.getDate() + index);
+                    const weekNames = ['日', '一', '二', '三', '四', '五', '六'];
+                    const dateStr = `${currentDay.getMonth()+1}/${currentDay.getDate()} (${weekNames[currentDay.getDay()]})`;
+                    // ---------------------------
+
                     const tab = document.createElement('div');
                     tab.className = `day-tab ${index === currentDayIndex ? 'active' : ''}`;
-                    // 標籤顯示：Day 1 (2/5)
-                    tab.innerText = `Day ${index+1} (${thisDate.getMonth()+1}/${thisDate.getDate()})`;
-                    tab.onclick = () => {
-                        currentDayIndex = index;
-                        loadItineraryDetails(); // 重新渲染
-                    };
-                    tabsContainer.appendChild(tab);
+                    tab.innerText = `Day ${index + 1}`;
+                    tab.onclick = () => { currentDayIndex = index; loadItinerary(); };
+                    tabs.appendChild(tab);
+
+                    if (index === currentDayIndex) {
+                        // 標題顯示：第 1 天 - 2/5 (四)
+                        let html = `<div class="day-section">
+                                        <h2 style="color:var(--primary-color);">第 ${index + 1} 天 - ${dateStr}</h2>`;
+                        
+                        (day.items || []).forEach((item, idx) => {
+                            html += `
+                                <div class="itinerary-item">
+                                    <input type="time" class="time-input" value="${item.time}" onchange="updateItinerary(${index}, ${idx}, 'time', this.value)">
+                                    <input type="text" class="place-input" value="${item.place}" placeholder="地點" onchange="updateItinerary(${index}, ${idx}, 'place', this.value)">
+                                    <button class="btn-maps" onclick="window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('${item.place}'))">📍</button>
+                                    <textarea class="note-input" placeholder="備註" onchange="updateItinerary(${index}, ${idx}, 'note', this.value)">${item.note}</textarea>
+                                    <button class="btn-delete" onclick="deleteItem(${index}, ${idx})">×</button>
+                                </div>`;
+                        });
+                
+                        html += `<button class="btn-add" onclick="addItem(${index})">+ 新增行程</button></div>`;
+                        content.innerHTML = html;
+                    }
                 });
+            });
+        }
 
-                // 渲染當前 Day 的內容
-                if (days.length > 0) {
-                    const currentDayData = days[currentDayIndex];
-                    const items = currentDayData.items || [];
-                    
-                    // 計算標題日期：第 1 天 - 2/5 (四)
-                    const thisDate = new Date(startDate);
-                    thisDate.setDate(startDate.getDate() + currentDayIndex);
-                    const weekNames = ['日', '一', '二', '三', '四', '五', '六'];
-                    const dateStr = `${thisDate.getMonth()+1}/${thisDate.getDate()} (${weekNames[thisDate.getDay()]})`;
+        // --- 記帳邏輯 ---
+        // --- 記帳功能優化 v1.4.4 ---
 
-                    let html = `<h3 class="day-header">第 ${currentDayIndex+1} 天 - ${dateStr}</h3>`;
+        // 修改後的開啟函數：每次開啟都先填入當天日期
+        function openFinanceModal() { 
+            resetFinanceForm(); 
+            document.getElementById('expDate').valueAsDate = new Date(); 
 
-                    items.forEach((item, idx) => {
-                        html += `
-                            <div class="itinerary-item">
-                                <div class="item-row">
-                                    <input type="time" class="time-input" value="${item.time || ''}" onchange="updateItem(${idx}, 'time', this.value)">
-                                    <input type="text" class="place-input" value="${item.place || ''}" placeholder="景點名稱" onchange="updateItem(${idx}, 'place', this.value)">
-                                    <button class="btn-del-item" onclick="deleteItem(${idx})">×</button>
-                                </div>
-                                <div class="item-row">
-                                    <button class="btn-map" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${item.place}','_blank')">📍 地圖</button>
-                                    <textarea class="note-input" placeholder="備註..." onchange="updateItem(${idx}, 'note', this.value)">${item.note || ''}</textarea>
+            // 關鍵修正：開啟時立刻跑一遍檢查，確保台幣狀態下匯率框是鎖死的
+            checkCurrency(); 
+
+            document.getElementById('financeModal').style.display = 'flex'; 
+        }
+
+        // 修正：重置時連匯率框也要清空，不留上一筆的數字
+        function resetFinanceForm() {
+            editingFinanceId = null; // 確保重置編輯狀態
+            document.getElementById('expAmount').value = '';
+            document.getElementById('expNote').value = '';
+            document.getElementById('expCurrency').value = 'TWD';
+            document.getElementById('expRate').value = '1'; // 重置為 1
+            document.getElementById('expCategory').selectedIndex = 0;
+        }
+
+        // 取消動作 (問題 3)
+        function cancelFinance() {
+            resetFinanceForm();
+            closeModal('financeModal');
+        }
+
+        // 儲存動作 (問題 1 & 4)
+        function saveExpense() {
+            const amt = document.getElementById('expAmount').value;
+            const date = document.getElementById('expDate').value;
+            if(!amt) return alert('請輸入金額');
+
+            db.ref(`trips/${currentTripId}/finance`).push({
+                date: date, // 儲存日期 (問題 1)
+                amount: parseFloat(amt),
+                currency: document.getElementById('expCurrency').value,
+                category: document.getElementById('expCategory').value,
+                note: document.getElementById('expNote').value || '未分類',
+                time: Date.now()
+            }).then(() => {
+                resetFinanceForm(); // 儲存成功後立即清空 (問題 4)
+                closeModal('financeModal');
+                if(isReportMode) loadFinanceReport();
+            });
+        }
+
+        // --- 記帳明細管理系統 v1.4.5 ---
+
+        // 1. 讀取並顯示 (排序: 舊 -> 新)
+        function loadFinanceReport() {
+            db.ref(`trips/${currentTripId}/finance`).once('value', snap => {
+                const content = document.getElementById('itineraryContent');
+                content.innerHTML = '<h3>📊 旅程消費明細</h3>';
+                let totalTWD = 0;
+                const list = [];
+                snap.forEach(c => { let d = c.val(); d.id = c.key; list.push(d); });
+                list.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                list.forEach(e => {
+                    const usedRate = e.exchangeRate || 1;
+                    const twd = e.amount * usedRate;
+                    totalTWD += twd;
+
+                    content.innerHTML += `
+                        <div class="finance-item" style="display: flex; align-items: stretch; border-bottom: 1px solid #eee; padding: 15px 5px; gap: 10px;">
+                            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
+                                <small style="color:#999; margin-bottom: 4px;">${e.date || '無日期'}</small>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="cat-tag" style="background:var(--primary-color); margin:0; flex-shrink: 0;">${e.category}</span>
+                                    <span style="font-size: 0.95rem; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;">${e.note}</span>
                                 </div>
                             </div>
-                        `;
-                    });
+                            
+                            <div style="width: 135px; text-align: right; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0;">
+                                <div style="font-weight: 900; font-size: 1rem; color: #000;">
+                                    <span style="font-size: 0.8rem; color: #666; font-weight: normal; margin-right: 4px;">${e.currency}</span>${Math.round(e.amount).toLocaleString()}
+                                </div>
+                                <div style="color: var(--primary-color); font-weight: bold; font-size: 0.85rem; margin-top: 2px;">NT$ ${Math.round(twd).toLocaleString()}</div>
+                                ${e.currency !== 'TWD' ? `
+                                    <div style="font-size: 0.8rem; color: #000; margin-top: 4px; font-weight: 500;">
+                                        (匯率 ${usedRate})
+                                    </div>` : ''}
+                            </div>
+                
+                            <div style="display: flex; flex-direction: column; justify-content: space-around; padding-left: 10px; border-left: 1px solid #f0f0f0; flex-shrink: 0;">
+                                <div onclick="editFinanceItem('${e.id}')" style="cursor:pointer; font-size: 1.2rem; padding: 5px; text-align: center;">✏️</div>
+                                <div onclick="deleteFinanceItem('${e.id}')" style="cursor:pointer; font-size: 1.2rem; padding: 5px; text-align: center;">🗑️</div>
+                            </div>
+                        </div>`;
+                });
 
-                    html += `<button class="btn-add-item" onclick="addItem()">+ 新增行程項目</button>`;
-                    contentContainer.innerHTML = html;
-                } else {
-                    contentContainer.innerHTML = '<p>沒有天數資料，請在主畫面編輯設定。</p>';
+                const summaryHtml = `<div class="report-summary"><small>預估總支出</small><div style="font-size:2rem; font-weight:900; color:var(--primary-color);">NT$ ${Math.round(totalTWD).toLocaleString()}</div></div>`;
+                content.insertAdjacentHTML('afterbegin', summaryHtml);
+            });
+        }
+
+        // 2. 刪除單筆紀錄
+        function deleteFinanceItem(itemId) {
+            const modal = document.getElementById('confirmModal');
+            const msg = document.getElementById('confirmMsg');
+            const yesBtn = document.getElementById('modalYes');
+
+            msg.innerText = "確定要刪除這筆支出紀錄嗎？";
+            modal.style.display = 'flex';
+
+            // 綁定點擊事件
+            yesBtn.onclick = () => {
+                db.ref(`trips/${currentTripId}/finance/${itemId}`).remove().then(() => {
+                    closeModal('confirmModal');
+                    loadFinanceReport();
+                });
+            };
+        }
+
+        // 3. 編輯單筆紀錄 (讀取資料回填到 Modal)
+        let editingFinanceId = null; // 追蹤目前正在編輯哪一筆
+
+        function editFinanceItem(itemId) {
+            db.ref(`trips/${currentTripId}/finance/${itemId}`).once('value', snap => {
+                const e = snap.val();
+                editingFinanceId = itemId; // 標記為編輯模式
+
+                // 回填資料
+                document.getElementById('expDate').value = e.date || "";
+                document.getElementById('expAmount').value = e.amount;
+                document.getElementById('expCurrency').value = e.currency;
+                document.getElementById('expCategory').value = e.category;
+                document.getElementById('expNote').value = e.note;
+
+                document.getElementById('financeModal').style.display = 'flex';
+            });
+        }
+
+        // 這個函數專門負責「檢查幣別」
+        function checkCurrency() {
+            // 1. 取得「幣別」選單目前選了什麼
+            const curr = document.getElementById('expCurrency').value;
+            // 2. 取得「匯率」那個輸入框
+            const rateInput = document.getElementById('expRate');
+
+            if (curr === 'TWD') {
+                // 如果是台幣
+                rateInput.value = 1;             // 自動填入 1
+                rateInput.disabled = true;       // 鎖住它 (不能點擊)
+                rateInput.style.backgroundColor = '#f0f0f0'; // 變成灰色
+            } else {
+                // 如果是外幣 (JPY 或 KRW)
+                rateInput.disabled = false;      // 開啟它 (可以點擊輸入)
+                rateInput.style.backgroundColor = '#ffffff'; // 變回白色
+                // 如果是編輯模式，則維持原本讀到的匯率，不要覆蓋
+                if (!editingFinanceId) {
+                    if (curr === 'JPY') rateInput.value = 0.22;
+                    if (curr === 'KRW') rateInput.value = 0.024;
                 }
-            });
-        }
-
-        // --- 4. CRUD 操作 (新增/修改/刪除項目) ---
-        
-        function addItem() {
-            db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).once('value', snap => {
-                const items = snap.val() || [];
-                items.push({ time: '09:00', place: '', note: '' });
-                db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(items);
-            });
-        }
-
-        function updateItem(itemIndex, field, value) {
-            db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${itemIndex}`).update({
-                [field]: value
-            });
-        }
-
-        function deleteItem(itemIndex) {
-            if(!confirm('確定刪除此項目？')) return;
-            db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).once('value', snap => {
-                const items = snap.val();
-                items.splice(itemIndex, 1);
-                db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(items);
-            });
-        }
-
-        function createNewTrip() {
-            const title = prompt("請輸入旅程標題：", "日本東京五日遊");
-            if (!title) return;
-            const newRef = db.ref('trips').push();
-            const today = new Date().toISOString().split('T')[0].replace(/-/g, '.'); // 2026.02.07
-            newRef.set({
-                title: title,
-                date: today,
-                img: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-                days: [
-                    { items: [] }, { items: [] }, { items: [] } // 預設 3 天
-                ]
-            });
-        }
-
-        function deleteTrip(id) {
-            if (confirm("確定要刪除整個旅程嗎？無法復原喔！")) {
-                db.ref(`trips/${id}`).remove();
             }
         }
 
-        function closeModal() {
-            document.getElementById('itineraryModal').style.display = 'none';
-            // 移除監聽以免效能問題
-            db.ref(`trips/${currentTripId}`).off(); 
+        // 4. 修改 saveExpense 以支援「更新」
+        function saveExpense() {
+            const amt = document.getElementById('expAmount').value;
+            const rate = document.getElementById('expRate').value; // 取得匯率框的數字
+            const date = document.getElementById('expDate').value;
+
+            if(!amt || !rate) return alert('請完整輸入金額與匯率');
+
+            const data = {
+                date: date,
+                amount: parseFloat(amt),
+                currency: document.getElementById('expCurrency').value,
+                exchangeRate: parseFloat(rate), // 👈 問題 4：把匯率存進 Firebase
+                category: document.getElementById('expCategory').value,
+                note: document.getElementById('expNote').value || '未分類',
+                time: Date.now()
+            };
+
+            // 如果 editingFinanceId 有值，代表是編輯舊資料，否則新增
+            const ref = editingFinanceId 
+                ? db.ref(`trips/${currentTripId}/finance/${editingFinanceId}`)
+                : db.ref(`trips/${currentTripId}/finance`).push();
+
+            ref.set(data).then(() => {
+                editingFinanceId = null; // 重置編輯狀態
+                resetFinanceForm();
+                closeModal('financeModal');
+                if(isReportMode) loadFinanceReport();
+            });
         }
 
-        // --- 工具函數 ---
-        function formatTripDateRange(dateStr, dayCount) {
-            if (!dateStr) return '未設定日期';
-            const start = new Date(dateStr.replace(/\./g, '-'));
-            if (isNaN(start.getTime())) return dateStr;
+        // 5. 修改取消函數，確保重置 editingFinanceId
+        function cancelFinance() {
+            editingFinanceId = null;
+            resetFinanceForm();
+            closeModal('financeModal');
+        }
+
+        // --- 基礎工具 (保留 v1.3.0) ---
+        function closeSidePanel() { document.getElementById('sidePanel').classList.remove('open'); document.getElementById('body').style.overflow = 'auto'; if(currentTripId) db.ref(`trips/${currentTripId}/days`).off(); }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+            // 額外保險：關閉時強制讓所有輸入框失去焦點，防止手機鍵盤卡住
+            document.querySelectorAll('input, select').forEach(el => el.blur());
+        }        
+        function handleMapAction(idx, url) { if (isPanelEditMode) { currentEditingItemIdx = idx; document.getElementById('mapUrlInput').value = url; document.getElementById('mapsModal').style.display='flex'; } else if (url) window.open(url, '_blank'); }
+        function saveMapInfo() { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${currentEditingItemIdx}`).update({ mapUrl: document.getElementById('mapUrlInput').value }); closeModal('mapsModal'); }
+        function updateItemField(idx, f, v) { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${idx}`).update({ [f]: v }); }
+        function initSortableItems() { if (sortableInstance) sortableInstance.destroy(); sortableInstance = Sortable.create(document.getElementById('itineraryContent'), { handle: '.item-drag-handle', animation: 200, onEnd: () => { const newItems = []; document.querySelectorAll('.itinerary-item').forEach(el => { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items/${el.dataset.idx}`).once('value', s => { newItems.push(s.val()); if(newItems.length === document.querySelectorAll('.itinerary-item').length) db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(newItems); }); }); } }); }
+        function toggleEdit(btn, id) {
+            const card = btn.closest('.trip-card'); const editables = card.querySelectorAll('.editable');
+            if (btn.innerText === "編輯標題") { editables.forEach(el => { el.contentEditable = true; el.classList.add('editing-mode'); }); btn.innerText = "儲存標題"; btn.style.background = "#2ecc71"; btn.style.color = "white"; } 
+            else { const up = {}; editables.forEach(el => { up[el.dataset.field] = el.innerText; el.contentEditable = false; el.classList.remove('editing-mode'); }); db.ref('trips/'+id).update(up); btn.innerText = "編輯標題"; btn.style.background = "#eee"; btn.style.color = "#333"; }
+            // 在 toggleEdit 的 else 區塊中加入
+            const dateInput = card.querySelector('.editable-date');
+            if (dateInput) {
+                up.date = dateInput.value.replace(/-/g, '.'); // 將 2026-02-05 轉回 2026.02.05 儲存
+            }
+        }
+        function openImgModal(id) { currentTripId = id; document.getElementById('imgModal').style.display='flex'; }
+        function applyImageChange() { const file = document.getElementById('imgFileInput').files[0]; const url = document.getElementById('imgUrlInput').value; if (file) { const reader = new FileReader(); reader.onload = (e) => { db.ref('trips/'+currentTripId).update({img: e.target.result}); closeModal('imgModal'); }; reader.readAsDataURL(file); } else if (url) { db.ref('trips/'+currentTripId).update({img: url}); closeModal('imgModal'); } }
+        function addNewItem() { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).once('value', s => { const i = s.val()||[]; i.push({time:"10:00",place:"新地點",note:"內容"}); db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(i); }); }
+        function addNewDay() { db.ref(`trips/${currentTripId}/days`).once('value', s => { const d = s.val()||[]; d.push({items:[{time:"09:00",place:"新旅程",note:"..."}]}); db.ref(`trips/${currentTripId}/days`).set(d).then(() => { currentDayIndex = d.length-1; loadItinerary(); }); }); }
+        function askDeleteItem(idx) { showConfirm("刪除此項？", () => { db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).once('value', s => { const i = s.val(); i.splice(idx, 1); db.ref(`trips/${currentTripId}/days/${currentDayIndex}/items`).set(i); }); }); }
+        function askDeleteDay() { showConfirm("捨棄整天？", () => { db.ref(`trips/${currentTripId}/days`).once('value', s => { const d = s.val(); d.splice(currentDayIndex, 1); currentDayIndex = 0; db.ref(`trips/${currentTripId}/days`).set(d); }); }); }
+        function askDeleteTrip(id) { showConfirm("刪除旅程？", () => { db.ref('trips/'+id).remove(); }); }
+        function showConfirm(msg, cb) { document.getElementById('confirmMsg').innerText = msg; document.getElementById('confirmModal').style.display='flex'; document.getElementById('modalYes').onclick = () => { cb(); closeModal('confirmModal'); }; }
+        function addNewTrip() {
+            const newId = db.ref('trips').push().key;
+            db.ref('trips/' + newId).set({
+                img: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600",
+                title: "我的新旅程", 
+                date: "2026.02.06", 
+                desc: "冒險開始", 
+                order: Date.now(), 
+                rating: 0, 
+                days: [{ items: [{ time: "09:00", place: "首站", note: "..." }] }]
+            }).then(() => {
+                // 核心修復：新增後自動對焦
+                setTimeout(() => {
+                    const el = document.getElementById('card-' + newId);
+                    if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300); // 稍微延遲確保 Firebase 監聽已渲染畫面
+            });
+        }
+        new Sortable(document.getElementById('tripGrid'), { animation: 200, handle: '.drag-handle', onEnd: () => { document.querySelectorAll('.trip-card').forEach((c, i) => db.ref('trips/' + c.dataset.id).update({ order: i })); } });
+    
+        function formatTripDateRange(startDateStr, days) {
+            if (!startDateStr || !days) return startDateStr;
             
+            // 將 2026.02.05 轉換成電腦讀得懂的格式
+            const start = new Date(startDateStr.replace(/\./g, '-'));
+            if (isNaN(start)) return startDateStr;
+        
+            const dayCount = days.length;
             const end = new Date(start);
-            end.setDate(start.getDate() + (dayCount - 1));
-            
+            end.setDate(start.getDate() + (dayCount > 0 ? dayCount - 1 : 0));
+        
             const weekNames = ['日', '一', '二', '三', '四', '五', '六'];
-            const format = d => `${d.getMonth()+1}/${d.getDate()}(${weekNames[d.getDay()]})`;
             
-            if (dayCount <= 1) return format(start);
-            return `${format(start)} ~ ${format(end)}`;
+            const format = (d) => `${d.getMonth() + 1}/${d.getDate()} (${weekNames[d.getDay()]})`;
+        
+            // 如果只有一天，顯示單日；多天則顯示範圍
+            return dayCount <= 1 ? format(start) : `${format(start)} ~ ${format(end)}`;
+        }
+    
+        function updateTripDate(id, val) {
+            // 把日曆選的 2026-02-05 轉回 2026.02.05 存檔
+            db.ref('trips/' + id).update({ date: val.replace(/-/g, '.') });
         }
 
-        // 啟動程式
-        loadTrips();
 
     </script>
 </body>
