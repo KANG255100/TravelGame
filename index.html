@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.6</title>
+    <title>我的旅遊雲端手帳 v1.5.7</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -183,6 +183,26 @@
             width: 50% !important; /* 覆蓋掉上面的 100%，讓它們並排 */
         }
 
+        /* 新增：日期選取器樣式 */
+        .date-edit-input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            display: none; /* 預設隱藏，僅編輯模式顯示 */
+        }
+        
+        /* 當進入編輯標題模式時，顯示日期選取器 */
+        .editing-mode + .date-edit-input {
+            display: block !important;
+        }
+
+        /* 根據計畫：隱藏主介面上原本顯示的日期欄位 */
+        .trip-date { display: none !important; }
+        
     </style>
 </head>
 <body id="body">
@@ -308,6 +328,9 @@
         }
 
         function renderCard(id, item) {
+            // 將 2026.02.06 轉換為 2026-02-06 格式供 HTML5 日期選取器使用
+            const dateValue = item.date ? item.date.replace(/\./g, '-') : '';
+
             const html = `
                 <article class="trip-card" data-id="${id}" id="card-${id}">
                     <div class="drag-handle" style="position:absolute; top:12px; left:12px; width:36px; height:36px; background:rgba(255,255,255,0.9); border:2px solid #333; border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:100; cursor:grab;">🖐️</div>
@@ -321,8 +344,10 @@
                         <button class="btn-action" style="color:var(--danger-color);" onclick="askDeleteTrip('${id}')">刪除行程</button>
                     </div>
                     <div class="trip-info">
-                        <div class="trip-date editable" data-field="date">${item.date}</div>
                         <div class="trip-title editable" data-field="title">${item.title}</div>
+                        
+                        <input type="date" class="date-edit-input" id="date-input-${id}" value="${dateValue}">
+
                         <div class="trip-desc editable" data-field="desc">${item.desc || '冒險描述...'}</div>
                         <div class="star-rating" onclick="handleRating(event, '${id}')">${generateStars(item.rating || 0)}</div>
                     </div>
@@ -669,3 +694,4 @@
     </script>
 </body>
 </html>
+
