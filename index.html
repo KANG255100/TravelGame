@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊雲端手帳 v1.5.21</title>
+    <title>我的旅遊雲端手帳 v1.5.22</title>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -437,20 +437,18 @@
                     <div class="trip-info">
                         <div class="trip-date">${item.date || '點擊編輯設定日期'}</div>
                         
-                        <div class="date-range-group" style="display: none; flex-direction: row; gap: 10px; margin-bottom: 12px;">
-                            <div class="date-box" style="flex: 1; position: relative; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 8px; text-align: center;">
-                                <span style="font-size: 11px; color: #888; display: block;">開始日期</span>
-                                <span class="start-date-val" style="font-size: 14px; font-weight: bold;">${s || '尚未設定'}</span>
-                                <input type="date" class="hidden-date-start" value="${s}" 
-                                       style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
-                            </div>
-                            <div class="date-box" style="flex: 1; position: relative; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 8px; text-align: center;">
-                                <span style="font-size: 11px; color: #888; display: block;">結束日期</span>
-                                <span class="end-date-val" style="font-size: 14px; font-weight: bold;">${e || '尚未設定'}</span>
-                                <input type="date" class="hidden-date-end" value="${e}" 
-                                       style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
-                            </div>
+                    <div class="date-range-group" style="display: none; flex-direction: row; gap: 10px; margin-bottom: 12px;">
+                        <div style="flex: 1; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 5px; text-align: center;">
+                            <span style="font-size: 11px; color: #888; display: block;">開始日期</span>
+                            <input type="date" class="start-date" value="${s}" 
+                                   style="width: 100%; border: none; background: transparent; text-align: center; font-size: 14px; font-weight: bold; cursor: pointer; outline: none;">
                         </div>
+                        <div style="flex: 1; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 5px; text-align: center;">
+                            <span style="font-size: 11px; color: #888; display: block;">結束日期</span>
+                            <input type="date" class="end-date" value="${e}" 
+                                   style="width: 100%; border: none; background: transparent; text-align: center; font-size: 14px; font-weight: bold; cursor: pointer; outline: none;">
+                        </div>
+                    </div>
 
                         <div class="trip-title">${item.title}</div>
                         <div class="trip-desc" style="font-size: 14px; color: #666; margin-top: 5px;">${item.desc || '冒險開始'}</div>
@@ -774,37 +772,36 @@
                 // --- 進入編輯模式 ---
                 btn.classList.add('active-editing');
                 btn.innerText = '儲存修改';
-                btn.style.backgroundColor = '#2ecc71'; // 亮綠色
+                btn.style.backgroundColor = '#2ecc71'; 
                 btn.style.color = '#fff';
         
-                // 1. 隱藏上方重複的日期資訊
+                // 1. 隱藏上方冗餘日期，顯示選單
                 if (dateDisplay) dateDisplay.style.display = 'none';
                 dateGroup.style.display = 'flex';
         
-                // 2. 標題編輯：加上綠色框框，但保持原本字體大小與排版
+                // 2. 標題編輯：保持原始字體，僅加綠框
                 const currentTitle = titleEl.innerText;
-                titleEl.innerHTML = `<input type="text" class="edit-title-input" value="${currentTitle}" 
-                    style="width: 100%; font-size: inherit; font-family: inherit; font-weight: bold; border: 2px solid #2ecc71; border-radius: 5px; padding: 5px; box-sizing: border-box; background: #fff;">`;
+                titleEl.style.border = "2px solid #2ecc71";
+                titleEl.style.borderRadius = "5px";
+                titleEl.style.padding = "5px";
+                titleEl.contentEditable = "true"; // 改用 contentEditable，排版絕對不會跑掉
+                titleEl.focus();
         
-                // 3. 描述編輯 (冒險開始)：同樣加上綠色框框
-                const currentDesc = descEl.innerText;
-                descEl.innerHTML = `<input type="text" class="edit-desc-input" value="${currentDesc}" 
-                    style="width: 100%; font-size: inherit; font-family: inherit; border: 2px solid #2ecc71; border-radius: 5px; padding: 5px; box-sizing: border-box; background: #fff;">`;
-        
-                // 自動監聽日期變更，即時反映在格子文字上
-                card.querySelectorAll('input[type="date"]').forEach(inp => {
-                    inp.onchange = (e) => {
-                        e.target.previousElementSibling.innerText = e.target.value.replace(/-/g, '.');
-                    };
-                });
+                // 3. 描述編輯：加上綠框
+                descEl.style.border = "2px solid #2ecc71";
+                descEl.style.borderRadius = "5px";
+                descEl.style.padding = "5px";
+                descEl.contentEditable = "true";
         
             } else {
                 // --- 執行儲存 ---
-                const newTitle = card.querySelector('.edit-title-input').value.trim();
-                const newDesc = card.querySelector('.edit-desc-input').value.trim();
-                const s = card.querySelector('.hidden-date-start').value.replace(/-/g, '.');
-                const e = card.querySelector('.hidden-date-end').value.replace(/-/g, '.');
+                const newTitle = titleEl.innerText.trim();
+                const newDesc = descEl.innerText.trim();
+                const startVal = card.querySelector('.start-date').value;
+                const endVal = card.querySelector('.end-date').value;
                 
+                const s = startVal.replace(/-/g, '.');
+                const e = endVal.replace(/-/g, '.');
                 const finalDate = (s && e) ? `${s} ~ ${e}` : (s || e || "");
         
                 // 更新 Firebase
@@ -813,16 +810,21 @@
                     desc: newDesc,
                     date: finalDate
                 }).then(() => {
-                    // 恢復 UI
-                    titleEl.innerHTML = newTitle;
-                    descEl.innerHTML = newDesc;
+                    // 恢復 UI 狀態
+                    titleEl.contentEditable = "false";
+                    titleEl.style.border = "none";
+                    titleEl.style.padding = "0";
+        
+                    descEl.contentEditable = "false";
+                    descEl.style.border = "none";
+                    descEl.style.padding = "0";
+        
                     if (dateDisplay) {
                         dateDisplay.innerText = finalDate || "我的旅遊期間";
                         dateDisplay.style.display = 'block';
                     }
                     dateGroup.style.display = 'none';
                     
-                    // 重置按鈕
                     btn.classList.remove('active-editing');
                     btn.innerText = '編輯標題';
                     btn.removeAttribute('style');
@@ -907,6 +909,7 @@
     </script>
 </body>
 </html>
+
 
 
 
